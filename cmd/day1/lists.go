@@ -2,6 +2,7 @@ package day1
 
 import (
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -92,4 +93,36 @@ func parseInput(h *common.Helpers, in *common.File) ([][]int, error) {
 	h.Logger.Debug(fmt.Sprintf("Right: %v", Right))
 
 	return [][]int{Left, Right}, nil
+}
+
+// sort sorts the lists
+func (l *Lists) Sort(h *common.Helpers) {
+	h.Logger.Debug("Sorting lists")
+	sortList(h, l.Left)
+	sortList(h, l.Right)
+}
+
+// sortList sorts a list
+func sortList(h *common.Helpers, l []int) {
+	h.Logger.Debug(fmt.Sprintf("Sorting list: %v", l))
+	slices.Sort(l)
+}
+
+// DiffListEntry returns the difference between the left and right lists at index i
+func diffListEntry(h *common.Helpers, l *Lists, i int) int {
+	h.Logger.Debug(fmt.Sprintf("DiffListEntry: %v", l))
+	if l.Left[i] < l.Right[i] {
+		return l.Right[i] - l.Left[i]
+	}
+	return l.Left[i] - l.Right[i]
+}
+
+// DiffList returns the difference between the left and right lists
+func (l *Lists) DiffList(h *common.Helpers) int {
+	h.Logger.Debug(fmt.Sprintf("DiffList: %v", l))
+	diff := 0
+	for i := 0; i < len(l.Left); i++ {
+		diff += diffListEntry(h, l, i)
+	}
+	return diff
 }

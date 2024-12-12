@@ -16,9 +16,10 @@ func Star1(h *common.Helpers) error {
 		h.Logger.Error(fmt.Sprintf("Error getting lists: %s", err))
 		return err
 	}
+	l.Sort(h)
 	// print the lists
-	h.Logger.Info(fmt.Sprintf("Left: %v", l.Left))
-	h.Logger.Info(fmt.Sprintf("Right: %v", l.Right))
-
-	return nil
+	h.Logger.Debug(fmt.Sprintf("Left: %v", l.Left))
+	h.Logger.Debug(fmt.Sprintf("Right: %v", l.Right))
+	_, err = h.Streams.Out.Write([]byte(fmt.Sprintf("Day 1 Star 1: %d\n", l.DiffList(h))))
+	return err
 }
