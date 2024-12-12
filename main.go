@@ -2,6 +2,7 @@ package main
 
 import (
 	"log/slog"
+	"os"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -21,7 +22,27 @@ func run(g common.GetStreamsFunc) {
 
 	// setup the logger
 	streams := g()
-	logger := slog.New(slog.NewJSONHandler(streams.ErrOut, nil))
+
+	// configure the logger
+	var level slog.Leveler
+	logLevel := os.Getenv("LOG_LEVEL")
+	switch logLevel {
+	case "debug":
+		level = slog.LevelDebug
+	case "info":
+		level = slog.LevelInfo
+	case "warn":
+		level = slog.LevelWarn
+	case "error":
+		level = slog.LevelError
+	default:
+		level = slog.LevelInfo
+	}
+	opts := &slog.HandlerOptions{
+		AddSource: logLevel == "debug",
+		Level:     level,
+	}
+	logger := slog.New(slog.NewJSONHandler(streams.ErrOut, opts))
 	// logger := slog.New(slog.NewTextHandler(streams.ErrOut(), nil))
 	slog.SetDefault(logger)
 
@@ -34,7 +55,9 @@ func run(g common.GetStreamsFunc) {
 		viperInstance.AutomaticEnv()
 	})
 
-	bsCmd := cmd.NewRootCmd(*common.NewHelpers(streams, viperInstance, logger))
+	helpers, err := common.NewHelpers(streams, viperInstance, logger)
+	cobra.CheckErr(err)
+	bsCmd := cmd.NewRootCmd(helpers)
 
 	flags.AddFlagSet(bsCmd.PersistentFlags())
 	pFlag.CommandLine = flags
