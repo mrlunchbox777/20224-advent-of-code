@@ -96,7 +96,7 @@ func parseInput(h *common.Helpers, in *common.File) ([][]int, error) {
 	return [][]int{Left, Right}, nil
 }
 
-// sort sorts the lists
+// Sort sorts the lists
 func (l *Lists) Sort(h *common.Helpers) {
 	h.Logger.Debug("Sorting lists")
 	sortList(h, l.Left)
@@ -109,7 +109,7 @@ func sortList(h *common.Helpers, l []int) {
 	slices.Sort(l)
 }
 
-// DiffListEntry returns the difference between the left and right lists at index i
+// diffListEntry returns the difference between the left and right lists at index i
 func diffListEntry(h *common.Helpers, l *Lists, i int) int {
 	h.Logger.Debug(fmt.Sprintf("DiffListEntry: %v", l))
 	if l.Left[i] < l.Right[i] {
@@ -126,4 +126,30 @@ func (l *Lists) DiffList(h *common.Helpers) int {
 		diff += diffListEntry(h, l, i)
 	}
 	return diff
+}
+
+// weightCommonEntries returns the product of the number of a common entry in the left and right lists
+func (l *Lists) weightCommonEntries(h *common.Helpers, e int) int {
+	h.Logger.Debug(fmt.Sprintf("CountCommonEntries: %v", l))
+	leftCount := 0
+	rightCount := 0
+	for i := 0; i < len(l.Left); i++ {
+		if l.Left[i] == e {
+			leftCount++
+		}
+		if l.Right[i] == e {
+			rightCount++
+		}
+	}
+	return leftCount * rightCount
+}
+
+// CountCommonEntries returns the product of the number of a common entry in the left and right lists
+func (l *Lists) CountCommonEntries(h *common.Helpers) int {
+	h.Logger.Debug(fmt.Sprintf("CountCommonEntries: %v", l))
+	count := 0
+	for i := 0; i < len(l.Left); i++ {
+		count += l.weightCommonEntries(h, l.Left[i])
+	}
+	return count
 }

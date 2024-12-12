@@ -1,6 +1,8 @@
 package day1
 
 import (
+	"fmt"
+
 	"github.com/mrlunchbox777/2024-advent-of-code/common"
 	"github.com/spf13/cobra"
 )
@@ -20,12 +22,11 @@ func NewStar2Cmd(h *common.Helpers) *cobra.Command {
 
 // Star2 is the solution for the first star
 func Star2(h *common.Helpers) error {
-	return nil
-	// l, err := getInputs(h, star1)
-	// if err != nil {
-	// 	h.Logger.Error(fmt.Sprintf("Error getting inputs: %s", err))
-	// 	return err
-	// }
-	// _, err = h.Streams.Out.Write([]byte(fmt.Sprintf("Day 1 Star 1: %d\n", l.DiffList(h))))
-	// return err
+	l, err := getInputs(h, star1)
+	if err != nil {
+		h.Logger.Error(fmt.Sprintf("Error getting inputs: %s", err))
+		return err
+	}
+	_, err = h.Streams.Out.Write([]byte(fmt.Sprintf("Day 2 Star 2: %d\n", l.CountCommonEntries(h))))
+	return err
 }
