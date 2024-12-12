@@ -19,14 +19,14 @@ func NewCmd(h *common.Helpers) *cobra.Command {
 		Short: human,
 		Long:  human,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return day1(h, cmd, args)
+			return day1(h)
 		},
 	}
 
 	return day1Cmd
 }
 
-func day1(h *common.Helpers, cmd *cobra.Command, args []string) error {
+func day1(h *common.Helpers) error {
 	if err := Star1(h); err != nil {
 		return err
 	}

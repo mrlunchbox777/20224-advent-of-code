@@ -16,13 +16,29 @@ var resources embed.FS
 type Resources struct {
 	FS        embed.FS
 	FileNames []string
-	Files     []fs.DirEntry
+	Files     []*File
+}
+
+// File is a struct that contains the file and metadata
+type File struct {
+	Name     string
+	DirEntry fs.DirEntry
+	Contents []byte
+}
+
+// newFile creates a new File struct
+func newFile(de fs.DirEntry, contents []byte) *File {
+	return &File{
+		Name:     de.Name(),
+		DirEntry: de,
+		Contents: contents,
+	}
 }
 
 // GetFile returns a file from the resources by name, nil if not found
-func (r *Resources) GetFile(name string) fs.DirEntry {
+func (r *Resources) GetFile(name string) *File {
 	for _, f := range r.Files {
-		if f.Name() == name {
+		if f.Name == name {
 			return f
 		}
 	}
@@ -37,9 +53,21 @@ func NewResources(l *slog.Logger, v *viper.Viper) (*Resources, error) {
 
 	files, err := r.FS.ReadDir("resources")
 	if err != nil {
+		l.Error(fmt.Sprintf("Error reading resources: %s", err))
 		return nil, err
 	}
-	r.Files = files
+
+	r.Files = make([]*File, 0, len(files))
+	for _, f := range files {
+		n := f.Name()
+		l.Debug(fmt.Sprintf("file: %s", n))
+		contents, err := r.FS.ReadFile(fmt.Sprintf("resources/%s", n))
+		if err != nil {
+			l.Error(fmt.Sprintf("Error reading file: %s", err))
+			return nil, err
+		}
+		r.Files = append(r.Files, newFile(f, contents))
+	}
 
 	l.Debug("resources:")
 	for _, f := range files {
