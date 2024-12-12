@@ -36,7 +36,8 @@ func newFile(de fs.DirEntry, contents []byte) *File {
 }
 
 // GetFile returns a file from the resources by name, nil if not found
-func (r *Resources) GetFile(name string) *File {
+func (r *Resources) GetFile(h *Helpers, name string) *File {
+	h.Logger.Debug(fmt.Sprintf("Getting file: %s", name))
 	for _, f := range r.Files {
 		if f.Name == name {
 			return f

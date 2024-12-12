@@ -48,6 +48,7 @@ func parseInput(h *common.Helpers, in *common.File) ([][]int, error) {
 	Left := []int{}
 	Right := []int{}
 
+	h.Logger.Debug(fmt.Sprintf("Parsing input: %s", in.Name))
 	contents := string(in.Contents)
 	h.Logger.Debug(fmt.Sprintf("Contents: %s", contents))
 	lines := strings.Split(strings.ReplaceAll(contents, "\r\n", "\n"), "\n")
