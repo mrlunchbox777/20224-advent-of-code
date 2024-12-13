@@ -11,8 +11,10 @@ import (
 
 // Lists has the left and right lists
 type Lists struct {
-	Left  []int
-	Right []int
+	Left        []int
+	Right       []int
+	LeftCounts  map[int]int
+	RightCounts map[int]int
 }
 
 // GetLists returns the left and right lists
@@ -37,9 +39,12 @@ func GetLists(h *common.Helpers, in *common.File) (*Lists, error) {
 		return nil, fmt.Errorf("Lists are not the same length")
 	}
 	lists := &Lists{
-		Left:  rawLists[0],
-		Right: rawLists[1],
+		Left:        rawLists[0],
+		Right:       rawLists[1],
+		LeftCounts:  make(map[int]int),
+		RightCounts: make(map[int]int),
 	}
+	lists.indexInstances(h)
 	return lists, nil
 }
 
@@ -128,28 +133,31 @@ func (l *Lists) DiffList(h *common.Helpers) int {
 	return diff
 }
 
-// weightCommonEntries returns the product of the number of a common entry in the left and right lists
-func (l *Lists) weightCommonEntries(h *common.Helpers, e int) int {
-	h.Logger.Debug(fmt.Sprintf("CountCommonEntries: %v", l))
-	leftCount := 0
-	rightCount := 0
-	for i := 0; i < len(l.Left); i++ {
-		if l.Left[i] == e {
-			leftCount++
-		}
-		if l.Right[i] == e {
-			rightCount++
-		}
+// indexInstances returns the number of instances of a number in a list
+func (l *Lists) indexInstances(h *common.Helpers) {
+	h.Logger.Debug(fmt.Sprintf("IndexInstances: %v", l))
+	for _, num := range l.Left {
+		l.LeftCounts[num]++
 	}
-	return leftCount * rightCount
+	for _, num := range l.Right {
+		l.RightCounts[num]++
+	}
+}
+
+// weightOfIndex returns the weight of an index
+func (l *Lists) weightOfIndex(h *common.Helpers, i int) int {
+	h.Logger.Debug(fmt.Sprintf("WeightOfIndex: %v", i))
+	leftValue := l.Left[i]
+	rightCount := l.RightCounts[leftValue]
+	return leftValue * rightCount
 }
 
 // CountCommonEntries returns the product of the number of a common entry in the left and right lists
 func (l *Lists) CountCommonEntries(h *common.Helpers) int {
 	h.Logger.Debug(fmt.Sprintf("CountCommonEntries: %v", l))
-	count := 0
-	for i := 0; i < len(l.Left); i++ {
-		count += l.weightCommonEntries(h, l.Left[i])
+	total := 0
+	for i, _ := range l.Left {
+		total += l.weightOfIndex(h, i)
 	}
-	return count
+	return total
 }
