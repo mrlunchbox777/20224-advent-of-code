@@ -54,59 +54,52 @@ func parseInput(h *common.Helpers, in *common.File) (*Reports, error) {
 	return reports, nil
 }
 
-// checkDampener checks if the dampener can handle the error
-func checkDampener(h *common.Helpers, dampener bool, dampened bool) bool {
-	h.Logger.Debug("Checking dampener")
-	if dampener && !dampened {
-		h.Logger.Debug("Dampening")
-		dampened = true
-		return true
-	}
-	return false
-}
-
 // IsSafe returns true if the report is safe
 func (r *Report) IsSafe(h *common.Helpers, dampener bool) bool {
+	h.Logger.Debug("Checking if report is safe, dampener: %t", dampener)
+	baseRun := r.singleRunIsSafe(h)
+	if dampener {
+		h.Logger.Debug("Dampening")
+		for i := 0; i < len(*r); i++ {
+			// copy the report
+			dampened := make(Report, len(*r))
+			copy(dampened, *r)
+			// remove the level at i
+			dampened = append(dampened[:i], dampened[i+1:]...)
+			// check if the dampened report is safe
+			if dampened.singleRunIsSafe(h) {
+				return true
+			}
+		}
+	}
+	return baseRun
+}
+
+// singleRunIsSafe returns true if the report is safe
+func (r *Report) singleRunIsSafe(h *common.Helpers) bool {
 	h.Logger.Debug("Checking if report is safe")
 	count := 0
 	increasing := false
 	prev := Level(0)
-	dampened := false
 	for _, l := range *r {
 		if count > 0 {
-			if count == 1 || (count == 2 && dampened) {
+			if count == 1 {
 				increasing = l > prev
 			}
 			// must stay increasing
 			if increasing && l <= prev {
-				if checkDampener(h, dampener, dampened) {
-					dampened = true
-					continue
-				}
 				return false
 			}
 			// must stay decreasing
 			if !increasing && l >= prev {
-				if checkDampener(h, dampener, dampened) {
-					dampened = true
-					continue
-				}
 				return false
 			}
 			// must not decrease by more than 3
 			if l < prev && l < (prev-3) {
-				if checkDampener(h, dampener, dampened) {
-					dampened = true
-					continue
-				}
 				return false
 			}
 			// must not increase by more than 3
 			if l > prev && l > (prev+3) {
-				if checkDampener(h, dampener, dampened) {
-					dampened = true
-					continue
-				}
 				return false
 			}
 		}
@@ -118,6 +111,7 @@ func (r *Report) IsSafe(h *common.Helpers, dampener bool) bool {
 
 // CountSafeEntries returns the number of safe reports
 func (r *Reports) CountSafeEntries(h *common.Helpers, dampener bool) int {
+	h.Logger.Debug("Counting safe entries")
 	count := 0
 	for _, report := range *r {
 		if report.IsSafe(h, dampener) {
