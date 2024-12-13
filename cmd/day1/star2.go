@@ -27,6 +27,6 @@ func Star2(h *common.Helpers) error {
 		h.Logger.Error(fmt.Sprintf("Error getting inputs: %s", err))
 		return err
 	}
-	_, err = h.Streams.Out.Write([]byte(fmt.Sprintf("Day 2 Star 2: %d\n", l.CountCommonEntries(h))))
+	_, err = h.Streams.Out.Write([]byte(fmt.Sprintf("%s Star 2: %d\n", human, l.CountCommonEntries(h))))
 	return err
 }

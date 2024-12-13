@@ -27,6 +27,6 @@ func Star1(h *common.Helpers) error {
 		h.Logger.Error(fmt.Sprintf("Error getting inputs: %s", err))
 		return err
 	}
-	_, err = h.Streams.Out.Write([]byte(fmt.Sprintf("Day 1 Star 1: %d\n", l.DiffList(h))))
+	_, err = h.Streams.Out.Write([]byte(fmt.Sprintf("%s Star 1: %d\n", human, l.DiffList(h))))
 	return err
 }
