@@ -1,4 +1,4 @@
-package day2
+package day3
 
 import (
 	"fmt"
@@ -8,8 +8,8 @@ import (
 )
 
 const (
-	use   = "day2"
-	human = "Day 2"
+	use   = "day3"
+	human = "Day 3"
 	star1 = "star1"
 	star2 = "star2"
 )
@@ -31,17 +31,17 @@ func NewCmd(h *common.Helpers) *cobra.Command {
 	return day1Cmd
 }
 
-func getInputs(h *common.Helpers, star string) (*Reports, error) {
+func getInputs(h *common.Helpers, star string) (*Memory, error) {
 	resourceName := fmt.Sprintf("%s-%s", use, star1)
 	name := fmt.Sprintf("%s-%s", use, star)
 	h.Logger.Info(name)
 	f := h.Resources.GetFile(h, resourceName)
-	r, err := GetReports(h, f)
+	r, err := GetMemory(h, f)
 	if err != nil {
-		h.Logger.Error(fmt.Sprintf("Error getting reports: %s", err))
+		h.Logger.Error(fmt.Sprintf("Error getting memory: %s", err))
 		return nil, err
 	}
 	// print the lists
-	h.Logger.Debug(fmt.Sprintf("Reports: %v", r))
+	h.Logger.Debug(fmt.Sprintf("Memory: %v", r))
 	return r, nil
 }

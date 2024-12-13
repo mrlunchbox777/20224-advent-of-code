@@ -3,6 +3,7 @@ package common
 import (
 	"fmt"
 	"log/slog"
+	"strconv"
 	"strings"
 
 	"github.com/spf13/viper"
@@ -71,4 +72,14 @@ func NewHelpers(s *Streams, v *viper.Viper, l *slog.Logger) (*Helpers, error) {
 // GetLines returns a slice of lines from a string
 func (h *Helpers) GetLines(s string) []string {
 	return strings.Split(strings.ReplaceAll(s, "\r\n", "\n"), "\n")
+}
+
+// ToInt converts a string to an int
+func (h *Helpers) ToInt(s string) int {
+	i, err := strconv.Atoi(s)
+	if err != nil {
+		h.Logger.Error(fmt.Sprintf("Error converting %s to int: %s", s, err))
+		panic(err)
+	}
+	return i
 }
