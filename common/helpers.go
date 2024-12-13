@@ -3,6 +3,7 @@ package common
 import (
 	"fmt"
 	"log/slog"
+	"strings"
 
 	"github.com/spf13/viper"
 )
@@ -65,4 +66,9 @@ func NewHelpers(s *Streams, v *viper.Viper, l *slog.Logger) (*Helpers, error) {
 		Logger:    l,
 		Resources: r,
 	}, nil
+}
+
+// GetLines returns a slice of lines from a string
+func (h *Helpers) GetLines(s string) []string {
+	return strings.Split(strings.ReplaceAll(s, "\r\n", "\n"), "\n")
 }
