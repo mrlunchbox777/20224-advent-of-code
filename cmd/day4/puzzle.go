@@ -120,11 +120,11 @@ func (p *Block) getRSets(h *common.Helpers, s Sets) Sets {
 
 // initialize initializes the block
 func (b *Block) initialize(h *common.Helpers, rows Sets) error {
-	if rows == nil || len(rows) == 0 {
+	if len(rows) == 0 {
 		h.Logger.Error("No rows to initialize")
 		return fmt.Errorf("No rows to initialize")
 	}
-	h.Logger.Debug("Initializing block: %i x %i", len(rows), len(rows[0]))
+	h.Logger.Debug(fmt.Sprintf("Initializing block: %d x %d", len(rows), len(rows[0])))
 	b.Rows = rows
 	b.RRows = b.getRSets(h, b.Rows)
 	b.getCols(h)
