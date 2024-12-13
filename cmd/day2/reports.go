@@ -56,7 +56,7 @@ func parseInput(h *common.Helpers, in *common.File) (*Reports, error) {
 
 // IsSafe returns true if the report is safe
 func (r *Report) IsSafe(h *common.Helpers, dampener bool) bool {
-	h.Logger.Debug("Checking if report is safe, dampener: %t", dampener)
+	h.Logger.Debug(fmt.Sprintf("Checking if report is safe, dampener: %t", dampener))
 	baseRun := r.singleRunIsSafe(h)
 	if dampener {
 		h.Logger.Debug("Dampening")
