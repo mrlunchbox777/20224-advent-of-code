@@ -1,6 +1,8 @@
 package day2
 
 import (
+	"fmt"
+
 	"github.com/mrlunchbox777/2024-advent-of-code/common"
 	"github.com/spf13/cobra"
 )
@@ -18,14 +20,13 @@ func NewStar2Cmd(h *common.Helpers) *cobra.Command {
 	return star2Cmd
 }
 
-// Star2 is the solution for the first star
+// Star2 is the solution for the second star
 func Star2(h *common.Helpers) error {
-	// l, err := getInputs(h, star1)
-	// if err != nil {
-	// 	h.Logger.Error(fmt.Sprintf("Error getting inputs: %s", err))
-	// 	return err
-	// }
-	// _, err = h.Streams.Out.Write([]byte(fmt.Sprintf("%s Star 2: %d\n", human, l.CountCommonEntries(h))))
-	// return err
-	return nil
+	r, err := getInputs(h, star1)
+	if err != nil {
+		h.Logger.Error(fmt.Sprintf("Error getting inputs: %s", err))
+		return err
+	}
+	_, err = h.Streams.Out.Write([]byte(fmt.Sprintf("%s Star 2: %d\n", human, r.CountSafeEntries(h, true))))
+	return err
 }

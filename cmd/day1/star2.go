@@ -20,7 +20,7 @@ func NewStar2Cmd(h *common.Helpers) *cobra.Command {
 	return star2Cmd
 }
 
-// Star2 is the solution for the first star
+// Star2 is the solution for the second star
 func Star2(h *common.Helpers) error {
 	l, err := getInputs(h, star1)
 	if err != nil {
