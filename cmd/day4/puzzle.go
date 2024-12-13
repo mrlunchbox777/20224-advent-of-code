@@ -1,12 +1,18 @@
 package day4
 
 import (
+	"fmt"
+
 	"github.com/mrlunchbox777/2024-advent-of-code/common"
 )
 
 // Puzzle is the struct for a word search puzzle
 type Puzzle struct {
-	Raw         string
+	Raw string
+	Block
+}
+
+type Block struct {
 	Initialized bool
 	Rows        Sets
 	RRows       Sets
@@ -39,21 +45,16 @@ func GetPuzzle(h *common.Helpers, in *common.File) (*Puzzle, error) {
 func parseInput(h *common.Helpers, in *common.File) (*Puzzle, error) {
 	h.Logger.Debug("Parsing input")
 	p := &Puzzle{
-		Raw:         string(in.Contents),
-		Initialized: false,
-		Rows:        []Set{},
-		RRows:       []Set{},
-		Cols:        []Set{},
-		RCols:       []Set{},
-		DDiag:       []Set{},
-		RDDiag:      []Set{},
-		ADiag:       []Set{},
-		RADiag:      []Set{},
+		Raw: string(in.Contents),
+		Block: Block{
+			Initialized: false,
+		},
 	}
+	p.getRows(h)
 	return p, nil
 }
 
-// getRows parses the rows
+// getRows parses the rows, doesn't initialize the puzzle
 func (p *Puzzle) getRows(h *common.Helpers) {
 	h.Logger.Debug("Getting rows")
 	lines := h.GetLines(p.Raw)
@@ -64,15 +65,11 @@ func (p *Puzzle) getRows(h *common.Helpers) {
 		}
 		p.Rows = append(p.Rows, row)
 	}
-	p.RRows = p.getRSets(h, p.Rows)
 }
 
 // getCols parses the columns
-func (p *Puzzle) getCols(h *common.Helpers) {
+func (p *Block) getCols(h *common.Helpers) {
 	h.Logger.Debug("Getting columns")
-	if len(p.Rows) == 0 {
-		p.getRows(h)
-	}
 	p.Cols = make([]Set, len(p.Rows[0]))
 	for _, r := range p.Rows {
 		for i, c := range r {
@@ -83,11 +80,8 @@ func (p *Puzzle) getCols(h *common.Helpers) {
 }
 
 // getADiag parses the ascending diagonals, starting from the top left
-func (p *Puzzle) getADiag(h *common.Helpers) {
+func (p *Block) getADiag(h *common.Helpers) {
 	h.Logger.Debug("Getting ascending diagonals")
-	if len(p.Rows) == 0 {
-		p.getRows(h)
-	}
 	p.ADiag = make([]Set, len(p.Rows)*2-1)
 	for y := 0; y < len(p.Rows); y++ {
 		for x := 0; x < len(p.Rows[y]); x++ {
@@ -98,11 +92,8 @@ func (p *Puzzle) getADiag(h *common.Helpers) {
 }
 
 // getDDiag parses the descending diagonals, starting from the top right
-func (p *Puzzle) getDDiag(h *common.Helpers) {
+func (p *Block) getDDiag(h *common.Helpers) {
 	h.Logger.Debug("Getting descending diagonals")
-	if len(p.Rows) == 0 {
-		p.getRows(h)
-	}
 	p.DDiag = make([]Set, len(p.Rows)*2-1)
 	for y := 0; y < len(p.Rows); y++ {
 		xLen := len(p.Rows[y]) - 1
@@ -114,7 +105,7 @@ func (p *Puzzle) getDDiag(h *common.Helpers) {
 }
 
 // getRSets the reverse set
-func (p *Puzzle) getRSets(h *common.Helpers, s Sets) Sets {
+func (p *Block) getRSets(h *common.Helpers, s Sets) Sets {
 	h.Logger.Debug("Getting reverse set")
 	var rs Sets
 	for _, r := range s {
@@ -127,36 +118,29 @@ func (p *Puzzle) getRSets(h *common.Helpers, s Sets) Sets {
 	return rs
 }
 
-// initialize initializes the puzzle
-func (p *Puzzle) initialize(h *common.Helpers) {
-	h.Logger.Debug("Initializing puzzle")
-	p.getRows(h)
-	p.getCols(h)
-	p.getADiag(h)
-	p.getDDiag(h)
-	p.Initialized = true
+// initialize initializes the block
+func (b *Block) initialize(h *common.Helpers, rows Sets) error {
+	if rows == nil || len(rows) == 0 {
+		h.Logger.Error("No rows to initialize")
+		return fmt.Errorf("No rows to initialize")
+	}
+	h.Logger.Debug("Initializing block: %i x %i", len(rows), len(rows[0]))
+	b.Rows = rows
+	b.RRows = b.getRSets(h, b.Rows)
+	b.getCols(h)
+	b.getADiag(h)
+	b.getDDiag(h)
+	b.Initialized = true
+	return nil
 }
 
 // CountWord returns the number of times a word appears in the puzzle
-func (p *Puzzle) CountWord(h *common.Helpers, word string) int {
-	h.Logger.Debug("Counting word")
-	if !p.Initialized {
-		p.initialize(h)
-	}
-	count := 0
-	count += p.countWordInSets(p.Rows, word)
-	count += p.countWordInSets(p.RRows, word)
-	count += p.countWordInSets(p.Cols, word)
-	count += p.countWordInSets(p.RCols, word)
-	count += p.countWordInSets(p.DDiag, word)
-	count += p.countWordInSets(p.RDDiag, word)
-	count += p.countWordInSets(p.ADiag, word)
-	count += p.countWordInSets(p.RADiag, word)
-	return count
+func (p *Puzzle) CountWord(h *common.Helpers, word string) (int, error) {
+	return p.countWordInBlock(h, word)
 }
 
 // countWordInSets returns the number of times a word appears in a set of cells
-func (p *Puzzle) countWordInSets(sets Sets, word string) int {
+func (p *Block) countWordInSets(sets Sets, word string) int {
 	count := 0
 	for _, s := range sets {
 		count += p.countWordInSet(s, word)
@@ -165,7 +149,7 @@ func (p *Puzzle) countWordInSets(sets Sets, word string) int {
 }
 
 // countWordInSet returns the number of times a word appears in a set of cells
-func (p *Puzzle) countWordInSet(set Set, word string) int {
+func (p *Block) countWordInSet(set Set, word string) int {
 	count := 0
 	for i := 0; i < len(set)-len(word)+1; i++ {
 		if p.checkSegment(set[i:i+len(word)], word) {
@@ -176,11 +160,47 @@ func (p *Puzzle) countWordInSet(set Set, word string) int {
 }
 
 // checkSegment checks if a segment contains a word
-func (p *Puzzle) checkSegment(cells []Cell, word string) bool {
+func (p *Block) checkSegment(cells []Cell, word string) bool {
 	for i, c := range cells {
 		if c.Letter != string(word[i]) {
 			return false
 		}
 	}
 	return true
+}
+
+// getBlock returns the block for a given Sets
+func (p *Puzzle) getBlock(h *common.Helpers, sets Sets) (*Block, error) {
+	h.Logger.Debug("Getting block")
+	b := &Block{
+		Initialized: false,
+	}
+	err := b.initialize(h, sets)
+	if err != nil {
+		h.Logger.Error(fmt.Sprintf("Error initializing block: %s", err))
+		return nil, err
+	}
+	return b, nil
+}
+
+// countWordInBlock returns the number of times a word appears in a block
+func (b *Block) countWordInBlock(h *common.Helpers, word string) (int, error) {
+	h.Logger.Debug("Counting word in block")
+	if !b.Initialized {
+		err := b.initialize(h, b.Rows)
+		if err != nil {
+			h.Logger.Error(fmt.Sprintf("Error initializing block: %s", err))
+			return 0, err
+		}
+	}
+	count := 0
+	count += b.countWordInSets(b.Rows, word)
+	count += b.countWordInSets(b.RRows, word)
+	count += b.countWordInSets(b.Cols, word)
+	count += b.countWordInSets(b.RCols, word)
+	count += b.countWordInSets(b.DDiag, word)
+	count += b.countWordInSets(b.RDDiag, word)
+	count += b.countWordInSets(b.ADiag, word)
+	count += b.countWordInSets(b.RADiag, word)
+	return count, nil
 }

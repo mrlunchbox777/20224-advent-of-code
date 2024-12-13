@@ -27,6 +27,11 @@ func Star1(h *common.Helpers) error {
 		h.Logger.Error(fmt.Sprintf("Error getting inputs: %s", err))
 		return err
 	}
-	_, err = h.Streams.Out.Write([]byte(fmt.Sprintf("%s Star 1: %d\n", human, r.CountWord(h, "XMAS"))))
+	count, err := r.CountWord(h, "XMAS")
+	if err != nil {
+		h.Logger.Error(fmt.Sprintf("Error counting word: %s", err))
+		return err
+	}
+	_, err = h.Streams.Out.Write([]byte(fmt.Sprintf("%s Star 1: %d\n", human, count)))
 	return err
 }
