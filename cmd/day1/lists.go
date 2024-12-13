@@ -156,7 +156,7 @@ func (l *Lists) weightOfIndex(h *common.Helpers, i int) int {
 func (l *Lists) CountCommonEntries(h *common.Helpers) int {
 	h.Logger.Debug(fmt.Sprintf("CountCommonEntries: %v", l))
 	total := 0
-	for i, _ := range l.Left {
+	for i := range l.Left {
 		total += l.weightOfIndex(h, i)
 	}
 	return total
