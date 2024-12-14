@@ -54,6 +54,20 @@ func parseInput(h *common.Helpers, in *common.File) (*Puzzle, error) {
 	return p, nil
 }
 
+// getBlock returns the block for a given Sets
+func getBlock(h *common.Helpers, sets Sets) (*Block, error) {
+	h.Logger.Debug("Getting block")
+	b := &Block{
+		Initialized: false,
+	}
+	err := b.initialize(h, sets)
+	if err != nil {
+		h.Logger.Error(fmt.Sprintf("Error initializing block: %s", err))
+		return nil, err
+	}
+	return b, nil
+}
+
 // getRows parses the rows, doesn't initialize the puzzle
 func (p *Puzzle) getRows(h *common.Helpers) {
 	h.Logger.Debug("Getting rows")
@@ -169,20 +183,6 @@ func (p *Block) checkSegment(cells []Cell, word string) bool {
 	return true
 }
 
-// getBlock returns the block for a given Sets
-func (p *Puzzle) getBlock(h *common.Helpers, sets Sets) (*Block, error) {
-	h.Logger.Debug("Getting block")
-	b := &Block{
-		Initialized: false,
-	}
-	err := b.initialize(h, sets)
-	if err != nil {
-		h.Logger.Error(fmt.Sprintf("Error initializing block: %s", err))
-		return nil, err
-	}
-	return b, nil
-}
-
 // countWordInBlock returns the number of times a word appears in a block
 func (b *Block) countWordInBlock(h *common.Helpers, word string) (int, error) {
 	h.Logger.Debug("Counting word in block")
@@ -203,4 +203,152 @@ func (b *Block) countWordInBlock(h *common.Helpers, word string) (int, error) {
 	count += b.countWordInSets(b.ADiag, word)
 	count += b.countWordInSets(b.RADiag, word)
 	return count, nil
+}
+
+// getBlocksFromBlock returns the subblocks from a block
+func (b *Block) getBlocksFromBlock(h *common.Helpers, target *Block) ([]*Block, error) {
+	h.Logger.Debug("Getting blocks from block")
+	h.Logger.Debug(fmt.Sprintf("Target: %d x %d", len(target.Rows), len(target.Rows[0])))
+	h.Logger.Debug(fmt.Sprintf("Block: %d x %d", len(b.Rows), len(b.Rows[0])))
+	blocks := make([]*Block, 0)
+	// get dimensions of target
+	rows := len(target.Rows)
+	cols := len(target.Rows[0])
+	// get the first row of target sized blocks from the source
+	for y := 0; y < len(b.Rows)-rows; y++ {
+		for x := 0; x < len(b.Rows[y])-cols; x++ {
+			block := &Block{}
+			// get the subset of rows
+			for i := 0; i < rows; i++ {
+				row := make(Set, 0)
+				// only get the subset of columns
+				row = append(row, b.Rows[y+i][x:x+cols]...)
+				block.Rows = append(block.Rows, row)
+			}
+			h.Logger.Debug(fmt.Sprintf("Block: %d x %d", len(block.Rows), len(block.Rows[0])))
+			err := block.initialize(h, block.Rows)
+			if err != nil {
+				h.Logger.Error(fmt.Sprintf("Error initializing block: %s", err))
+				return nil, err
+			}
+			blocks = append(blocks, block)
+		}
+	}
+	return blocks, nil
+}
+
+// doBlocksMatch checks if two blocks match
+func (b *Block) doBlocksMatch(h *common.Helpers, target *Block) bool {
+	h.Logger.Debug("Checking if blocks match")
+	if len(b.Rows) != len(target.Rows) {
+		return false
+	}
+	if len(b.Rows[0]) != len(target.Rows[0]) {
+		return false
+	}
+	for y := 0; y < len(b.Rows); y++ {
+		for x := 0; x < len(b.Rows[y]); x++ {
+			// skip wildcards
+			if target.Rows[y][x].Letter == "" {
+				continue
+			}
+			if b.Rows[y][x].Letter != target.Rows[y][x].Letter {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+// rotate90 rotates the block 90 degrees
+func (b *Block) rotate90x(h *common.Helpers, count int) (*Block, error) {
+	h.Logger.Debug("Rotating block")
+	block := &Block{}
+	block.Rows = make([]Set, len(b.Rows[0]))
+	for i := 0; i < count; i++ {
+		for y := 0; y < len(b.Rows); y++ {
+			for x := 0; x < len(b.Rows[y]); x++ {
+				block.Rows[x] = append(block.Rows[x], b.Rows[y][x])
+			}
+		}
+	}
+	err := block.initialize(h, block.Rows)
+	if err != nil {
+		h.Logger.Error(fmt.Sprintf("Error initializing block: %s", err))
+		return nil, err
+	}
+	return block, nil
+}
+
+// doBlocksMatchAny checks if two blocks match in any orientation (rotated and checked 3 times), use "" for wildcards
+func (b *Block) doBlocksMatchAny(h *common.Helpers, target *Block) (bool, error) {
+	h.Logger.Debug("Checking if blocks match")
+	if b.doBlocksMatch(h, target) {
+		return true, nil
+	}
+	newTarget, err := target.rotate90x(h, 1)
+	if err != nil {
+		h.Logger.Error(fmt.Sprintf("Error rotating block: %s", err))
+		return false, err
+	}
+	if b.doBlocksMatch(h, newTarget) {
+		return true, nil
+	}
+	newTarget, err = target.rotate90x(h, 2)
+	if err != nil {
+		h.Logger.Error(fmt.Sprintf("Error rotating block: %s", err))
+		return false, err
+	}
+	if b.doBlocksMatch(h, newTarget) {
+		return true, nil
+	}
+	newTarget, err = target.rotate90x(h, 3)
+	if err != nil {
+		h.Logger.Error(fmt.Sprintf("Error rotating block: %s", err))
+		return false, err
+	}
+	if b.doBlocksMatch(h, newTarget) {
+		return true, nil
+	}
+	return false, nil
+}
+
+// countBlockInBlock returns the number of times a Block appears in a block (use "" for wildcards)
+func (b *Block) countBlockInBlock(h *common.Helpers, target Sets) (int, error) {
+	h.Logger.Debug("Counting block in block")
+	if !b.Initialized {
+		err := b.initialize(h, b.Rows)
+		if err != nil {
+			h.Logger.Error(fmt.Sprintf("Error initializing block: %s", err))
+			return 0, err
+		}
+	}
+	block, err := getBlock(h, target)
+	if err != nil {
+		h.Logger.Error(fmt.Sprintf("Error getting block: %s", err))
+		return 0, err
+	}
+	count := 0
+
+	subBlocks, err := b.getBlocksFromBlock(h, block)
+	if err != nil {
+		h.Logger.Error(fmt.Sprintf("Error getting blocks from block: %s", err))
+		return 0, err
+	}
+	for _, subBlock := range subBlocks {
+		match, err := b.doBlocksMatchAny(h, subBlock)
+		if err != nil {
+			h.Logger.Error(fmt.Sprintf("Error checking if blocks match: %s", err))
+			return 0, err
+		}
+		if match {
+			count++
+		}
+	}
+	return count, nil
+}
+
+// CountBlocks returns the number of times a Block appears in the puzzle
+func (p *Puzzle) CountBlocks(h *common.Helpers, target Sets) (int, error) {
+	return p.countBlockInBlock(h, target)
 }

@@ -1,6 +1,8 @@
 package day4
 
 import (
+	"fmt"
+
 	"github.com/mrlunchbox777/2024-advent-of-code/common"
 	"github.com/spf13/cobra"
 )
@@ -20,12 +22,34 @@ func NewStar2Cmd(h *common.Helpers) *cobra.Command {
 
 // Star2 is the solution for the second star
 func Star2(h *common.Helpers) error {
-	// r, err := getInputs(h, star1)
-	// if err != nil {
-	// 	h.Logger.Error(fmt.Sprintf("Error getting inputs: %s", err))
-	// 	return err
-	// }
-	// _, err = h.Streams.Out.Write([]byte(fmt.Sprintf("%s Star 1: %d\n", human, r.SumOfCommands(h, true))))
-	// return err
-	return nil
+	p, err := getInputs(h, star1)
+	if err != nil {
+		h.Logger.Error(fmt.Sprintf("Error getting inputs: %s", err))
+		return err
+	}
+	// create the target sets
+	sets := Sets{
+		{
+			Cell{Letter: "M"},
+			Cell{Letter: " "},
+			Cell{Letter: "S"},
+		},
+		{
+			Cell{Letter: " "},
+			Cell{Letter: "A"},
+			Cell{Letter: " "},
+		},
+		{
+			Cell{Letter: "M"},
+			Cell{Letter: " "},
+			Cell{Letter: "S"},
+		},
+	}
+	count, err := p.CountBlocks(h, sets)
+	if err != nil {
+		h.Logger.Error(fmt.Sprintf("Error counting word: %s", err))
+		return err
+	}
+	_, err = h.Streams.Out.Write([]byte(fmt.Sprintf("%s Star 2: %d\n", human, count)))
+	return err
 }

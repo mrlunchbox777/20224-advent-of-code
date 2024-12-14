@@ -22,12 +22,12 @@ func NewStar1Cmd(h *common.Helpers) *cobra.Command {
 
 // Star1 is the solution for the first star
 func Star1(h *common.Helpers) error {
-	r, err := getInputs(h, star1)
+	p, err := getInputs(h, star1)
 	if err != nil {
 		h.Logger.Error(fmt.Sprintf("Error getting inputs: %s", err))
 		return err
 	}
-	count, err := r.CountWord(h, "XMAS")
+	count, err := p.CountWord(h, "XMAS")
 	if err != nil {
 		h.Logger.Error(fmt.Sprintf("Error counting word: %s", err))
 		return err
