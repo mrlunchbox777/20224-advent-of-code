@@ -238,15 +238,13 @@ func (b *Block) getBlocksFromBlock(h *common.Helpers, target *Block) ([]*Block, 
 }
 
 // doBlocksMatch checks if two blocks match, use " " for wildcards
-func (b *Block) doBlocksMatch(h *common.Helpers, target *Block) bool {
+func (b *Block) doBlocksMatch(h *common.Helpers, target *Block) (bool, error) {
 	h.Logger.Debug("Checking if blocks match")
 	if len(b.Rows) != len(target.Rows) {
-		// return false
-		panic(fmt.Sprintf("Rows don't match: %d != %d", len(b.Rows), len(target.Rows)))
+		return false, fmt.Errorf("Rows don't match: %d != %d", len(b.Rows), len(target.Rows))
 	}
 	if len(b.Rows[0]) != len(target.Rows[0]) {
-		// return false
-		panic(fmt.Sprintf("Cols don't match: %d != %d", len(b.Rows[0]), len(target.Rows[0])))
+		return false, fmt.Errorf("Cols don't match: %d != %d", len(b.Rows[0]), len(target.Rows[0]))
 	}
 	for y := 0; y < len(b.Rows); y++ {
 		for x := 0; x < len(b.Rows[y]); x++ {
@@ -255,11 +253,11 @@ func (b *Block) doBlocksMatch(h *common.Helpers, target *Block) bool {
 				continue
 			}
 			if b.Rows[y][x].Letter != target.Rows[y][x].Letter {
-				return false
+				return false, nil
 			}
 		}
 	}
-	return true
+	return true, nil
 }
 
 // rotate90 rotates the block 90 degrees
@@ -302,32 +300,20 @@ func (b *Block) rotate90x(h *common.Helpers, count int) (*Block, error) {
 func (b *Block) doBlocksMatchAny(h *common.Helpers, target *Block) (int, error) {
 	h.Logger.Debug("Checking if blocks match")
 	count := 0
-	if b.doBlocksMatch(h, target) {
-		count++
-	}
-	newTarget, err := target.rotate90x(h, 1)
-	if err != nil {
-		h.Logger.Error(fmt.Sprintf("Error rotating block: %s", err))
-		return 0, err
-	}
-	if b.doBlocksMatch(h, newTarget) {
-		count++
-	}
-	newTarget, err = target.rotate90x(h, 2)
-	if err != nil {
-		h.Logger.Error(fmt.Sprintf("Error rotating block: %s", err))
-		return 0, err
-	}
-	if b.doBlocksMatch(h, newTarget) {
-		count++
-	}
-	newTarget, err = target.rotate90x(h, 3)
-	if err != nil {
-		h.Logger.Error(fmt.Sprintf("Error rotating block: %s", err))
-		return 0, err
-	}
-	if b.doBlocksMatch(h, newTarget) {
-		count++
+	for i := 0; i < 4; i++ {
+		newTarget, err := target.rotate90x(h, i)
+		if err != nil {
+			h.Logger.Error(fmt.Sprintf("Error rotating block: %s", err))
+			return 0, err
+		}
+		match, err := b.doBlocksMatch(h, newTarget)
+		if err != nil {
+			h.Logger.Error(fmt.Sprintf("Error checking if blocks match: %s", err))
+			return 0, err
+		}
+		if match {
+			count++
+		}
 	}
 	return count, nil
 }
@@ -342,20 +328,20 @@ func (b *Block) countBlockInBlock(h *common.Helpers, target Sets) (int, error) {
 			return 0, err
 		}
 	}
-	block, err := getBlock(h, target)
+	targetBlock, err := getBlock(h, target)
 	if err != nil {
 		h.Logger.Error(fmt.Sprintf("Error getting block: %s", err))
 		return 0, err
 	}
 	count := 0
 
-	subBlocks, err := b.getBlocksFromBlock(h, block)
+	subBlocks, err := b.getBlocksFromBlock(h, targetBlock)
 	if err != nil {
 		h.Logger.Error(fmt.Sprintf("Error getting blocks from block: %s", err))
 		return 0, err
 	}
 	for _, subBlock := range subBlocks {
-		match, err := subBlock.doBlocksMatchAny(h, block)
+		match, err := subBlock.doBlocksMatchAny(h, targetBlock)
 		if err != nil {
 			h.Logger.Error(fmt.Sprintf("Error checking if blocks match: %s", err))
 			return 0, err

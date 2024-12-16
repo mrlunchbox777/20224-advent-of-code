@@ -26,7 +26,7 @@ func run(g common.GetStreamsFunc) {
 	// configure the logger
 	var level slog.Leveler
 	logLevel := os.Getenv("LOG_LEVEL")
-	switch logLevel {
+	switch strings.ToLower(logLevel) {
 	case "debug":
 		level = slog.LevelDebug
 	case "info":
