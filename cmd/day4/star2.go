@@ -22,7 +22,7 @@ func NewStar2Cmd(h *common.Helpers) *cobra.Command {
 
 // Star2 is the solution for the second star
 func Star2(h *common.Helpers) error {
-	p, err := getInputs(h, star1)
+	p, err := getInputs(h, star2)
 	if err != nil {
 		h.Logger.Error(fmt.Sprintf("Error getting inputs: %s", err))
 		return err
