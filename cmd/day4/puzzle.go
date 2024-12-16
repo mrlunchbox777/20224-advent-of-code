@@ -1,6 +1,7 @@
 package day4
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/mrlunchbox777/2024-advent-of-code/common"
@@ -134,6 +135,10 @@ func (p *Block) getRSets(h *common.Helpers, s Sets) Sets {
 
 // initialize initializes the block
 func (b *Block) initialize(h *common.Helpers, rows Sets) error {
+	if b.Initialized {
+		h.Logger.Debug("Block already initialized")
+		return nil
+	}
 	if len(rows) == 0 {
 		h.Logger.Error("No rows to initialize")
 		return fmt.Errorf("No rows to initialize")
@@ -240,14 +245,20 @@ func (b *Block) getBlocksFromBlock(h *common.Helpers, target *Block) ([]*Block, 
 // doBlocksMatch checks if two blocks match, use " " for wildcards
 func (b *Block) doBlocksMatch(h *common.Helpers, target *Block) (bool, error) {
 	h.Logger.Debug("Checking if blocks match")
-	if len(b.Rows) != len(target.Rows) {
+	rCount := len(b.Rows)
+	cCount := 0
+	if rCount != len(target.Rows) {
 		return false, fmt.Errorf("Rows don't match: %d != %d", len(b.Rows), len(target.Rows))
 	}
-	if len(b.Rows[0]) != len(target.Rows[0]) {
-		return false, fmt.Errorf("Cols don't match: %d != %d", len(b.Rows[0]), len(target.Rows[0]))
+	if rCount > 0 {
+		cCount = len(b.Rows[0])
+		if cCount != len(target.Rows[0]) {
+			return false, fmt.Errorf("Cols don't match: %d != %d", len(b.Rows[0]), len(target.Rows[0]))
+		}
 	}
-	for y := 0; y < len(b.Rows); y++ {
-		for x := 0; x < len(b.Rows[y]); x++ {
+	// every cell must match
+	for y := 0; y < rCount; y++ {
+		for x := 0; x < cCount; x++ {
 			// skip wildcards
 			if target.Rows[y][x].Letter == " " {
 				continue
@@ -263,11 +274,17 @@ func (b *Block) doBlocksMatch(h *common.Helpers, target *Block) (bool, error) {
 // rotate90 rotates the block 90 degrees
 func (b *Block) rotate90(h *common.Helpers, init bool) (*Block, error) {
 	h.Logger.Debug("Rotating block")
+	maxY := len(b.Rows)
+	if maxY == 0 {
+		h.Logger.Error("No rows to rotate")
+		return nil, fmt.Errorf("No rows to rotate")
+	}
 	block := &Block{}
-	block.Rows = make([]Set, len(b.Rows[0]))
-	for y := 0; y < len(b.Rows); y++ {
-		for x := 0; x < len(b.Rows[y]); x++ {
-			block.Rows[x] = append(block.Rows[x], b.Rows[y][x])
+	maxX := len(b.Rows[0])
+	block.Rows = make([]Set, maxX)
+	for x := 0; x < maxX; x++ {
+		for y := 0; y < maxY; y++ {
+			block.Rows[y] = append(block.Rows[y], b.Rows[y][maxX-x-1])
 		}
 	}
 	if init {
@@ -297,16 +314,11 @@ func (b *Block) rotate90x(h *common.Helpers, count int) (*Block, error) {
 }
 
 // doBlocksMatchAny checks if two blocks match in any orientation (rotated and checked 3 times), use " " for wildcards
-func (b *Block) doBlocksMatchAny(h *common.Helpers, target *Block) (int, error) {
+func (b *Block) doBlocksMatchAny(h *common.Helpers, targets []*Block) (int, error) {
 	h.Logger.Debug("Checking if blocks match")
 	count := 0
-	for i := 0; i < 4; i++ {
-		newTarget, err := target.rotate90x(h, i)
-		if err != nil {
-			h.Logger.Error(fmt.Sprintf("Error rotating block: %s", err))
-			return 0, err
-		}
-		match, err := b.doBlocksMatch(h, newTarget)
+	for _, target := range targets {
+		match, err := b.doBlocksMatch(h, target)
 		if err != nil {
 			h.Logger.Error(fmt.Sprintf("Error checking if blocks match: %s", err))
 			return 0, err
@@ -333,15 +345,33 @@ func (b *Block) countBlockInBlock(h *common.Helpers, target Sets) (int, error) {
 		h.Logger.Error(fmt.Sprintf("Error getting block: %s", err))
 		return 0, err
 	}
-	count := 0
+	targetBlocks := make([]*Block, 0)
+	for i := 0; i < 4; i++ {
+		newTarget, err := targetBlock.rotate90x(h, i)
+		if err != nil {
+			h.Logger.Error(fmt.Sprintf("Error rotating block: %s", err))
+			return 0, err
+		}
+		h.Logger.Debug(fmt.Sprintf("Rotated block: %d x %d", len(newTarget.Rows), len(newTarget.Rows[0])))
+		stringNewTarget, err := json.Marshal(newTarget)
+		if err != nil {
+			h.Logger.Error(fmt.Sprintf("Error marshalling block: %s", err))
+			return 0, err
+		}
+		h.Logger.Debug(fmt.Sprintf("Rotated block values: %s", stringNewTarget))
+		targetBlocks = append(targetBlocks, newTarget)
+	}
 
+	// os.Exit(0)
+
+	count := 0
 	subBlocks, err := b.getBlocksFromBlock(h, targetBlock)
 	if err != nil {
 		h.Logger.Error(fmt.Sprintf("Error getting blocks from block: %s", err))
 		return 0, err
 	}
 	for _, subBlock := range subBlocks {
-		match, err := subBlock.doBlocksMatchAny(h, targetBlock)
+		match, err := subBlock.doBlocksMatchAny(h, targetBlocks)
 		if err != nil {
 			h.Logger.Error(fmt.Sprintf("Error checking if blocks match: %s", err))
 			return 0, err
