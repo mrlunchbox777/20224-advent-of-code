@@ -96,6 +96,10 @@ func (p *Block) getCols(h *common.Helpers) {
 
 // getADiag parses the ascending diagonals, starting from the top left
 func (p *Block) getADiag(h *common.Helpers) {
+	if len(p.Rows) != len(p.Rows[0]) {
+		h.Logger.Debug("Can't get ascending diagonals")
+		return
+	}
 	h.Logger.Debug("Getting ascending diagonals")
 	p.ADiag = make([]Set, len(p.Rows)*2-1)
 	for y := 0; y < len(p.Rows); y++ {
@@ -108,6 +112,10 @@ func (p *Block) getADiag(h *common.Helpers) {
 
 // getDDiag parses the descending diagonals, starting from the top right
 func (p *Block) getDDiag(h *common.Helpers) {
+	if len(p.Rows) != len(p.Rows[0]) {
+		h.Logger.Debug("Can't get descending diagonals")
+		return
+	}
 	h.Logger.Debug("Getting descending diagonals")
 	p.DDiag = make([]Set, len(p.Rows)*2-1)
 	for y := 0; y < len(p.Rows); y++ {
@@ -279,12 +287,13 @@ func (b *Block) rotate90(h *common.Helpers, init bool) (*Block, error) {
 		h.Logger.Error("No rows to rotate")
 		return nil, fmt.Errorf("No rows to rotate")
 	}
-	block := &Block{}
 	maxX := len(b.Rows[0])
-	block.Rows = make([]Set, maxX)
-	for y := 0; y < maxY; y++ {
-		for x := 0; x < maxX; x++ {
-			block.Rows[y] = append(block.Rows[y], b.Rows[y][maxX-x-1])
+	block := &Block{}
+	block.Rows = make(Sets, maxX)
+	for x := 0; x < maxX; x++ {
+		block.Rows[x] = make(Set, maxY)
+		for y := 0; y < maxY; y++ {
+			block.Rows[x][y] = b.Rows[maxY-y-1][x]
 		}
 	}
 	if init {
@@ -331,7 +340,7 @@ func (b *Block) doBlocksMatchAny(h *common.Helpers, targets []*Block) (int, erro
 }
 
 // countBlockInBlock returns the number of times a Block appears in a block (use " " for wildcards)
-func (b *Block) countBlockInBlock(h *common.Helpers, target Sets) (int, error) {
+func (b *Block) countBlockInBlockSameSize(h *common.Helpers, targets []Sets, rotate bool) (int, error) {
 	h.Logger.Debug("Counting block in block")
 	if !b.Initialized {
 		err := b.initialize(h, b.Rows)
@@ -340,29 +349,45 @@ func (b *Block) countBlockInBlock(h *common.Helpers, target Sets) (int, error) {
 			return 0, err
 		}
 	}
-	targetBlock, err := getBlock(h, target)
-	if err != nil {
-		h.Logger.Error(fmt.Sprintf("Error getting block: %s", err))
-		return 0, err
-	}
 	targetBlocks := make([]*Block, 0)
-	for i := 0; i < 4; i++ {
-		newTarget, err := targetBlock.rotate90x(h, i)
+	for _, target := range targets {
+		targetBlock, err := getBlock(h, target)
 		if err != nil {
-			h.Logger.Error(fmt.Sprintf("Error rotating block: %s", err))
+			h.Logger.Error(fmt.Sprintf("Error getting block: %s", err))
 			return 0, err
 		}
-		h.Logger.Debug(fmt.Sprintf("Rotated block: %d x %d", len(newTarget.Rows), len(newTarget.Rows[0])))
-		stringNewTarget, err := json.Marshal(newTarget)
-		if err != nil {
-			h.Logger.Error(fmt.Sprintf("Error marshalling block: %s", err))
-			return 0, err
+		targetBlocks = append(targetBlocks, targetBlock)
+	}
+	if rotate {
+		for _, target := range targets {
+			targetBlock, err := getBlock(h, target)
+			if err != nil {
+				h.Logger.Error(fmt.Sprintf("Error getting block: %s", err))
+				return 0, err
+			}
+			// already have the original block
+			for i := 1; i < 4; i++ {
+				newTarget, err := targetBlock.rotate90x(h, i)
+				if err != nil {
+					h.Logger.Error(fmt.Sprintf("Error rotating block: %s", err))
+					return 0, err
+				}
+				h.Logger.Debug(fmt.Sprintf("Rotated block: %d x %d", len(newTarget.Rows), len(newTarget.Rows[0])))
+				stringNewTarget, err := json.Marshal(newTarget)
+				if err != nil {
+					h.Logger.Error(fmt.Sprintf("Error marshalling block: %s", err))
+					return 0, err
+				}
+				h.Logger.Debug(fmt.Sprintf("Rotated block values: %s", stringNewTarget))
+				targetBlocks = append(targetBlocks, newTarget)
+			}
 		}
-		h.Logger.Debug(fmt.Sprintf("Rotated block values: %s", stringNewTarget))
-		targetBlocks = append(targetBlocks, newTarget)
 	}
 
 	// os.Exit(0)
+
+	// NOTE: from here on, only for same sized blocks
+	targetBlock := targetBlocks[0]
 
 	count := 0
 	subBlocks, err := b.getBlocksFromBlock(h, targetBlock)
@@ -382,6 +407,22 @@ func (b *Block) countBlockInBlock(h *common.Helpers, target Sets) (int, error) {
 }
 
 // CountBlocks returns the number of times a Block appears in the puzzle
-func (p *Puzzle) CountBlocks(h *common.Helpers, target Sets) (int, error) {
-	return p.countBlockInBlock(h, target)
+func (p *Puzzle) CountBlocksSameSize(h *common.Helpers, targets []Sets) (int, error) {
+	if len(targets) == 0 {
+		h.Logger.Error("No targets to count")
+		return 0, fmt.Errorf("No targets to count")
+	}
+	size := len(targets[0])
+	if size == 0 {
+		h.Logger.Error("No target size")
+		return 0, fmt.Errorf("No target size")
+	}
+	for _, target := range targets {
+		h.Logger.Debug(fmt.Sprintf("Target: %d x %d", len(target), len(target[0])))
+		if len(target) != size {
+			h.Logger.Error("Targets are not the same size")
+			return 0, fmt.Errorf("Targets are not the same size")
+		}
+	}
+	return p.countBlockInBlockSameSize(h, targets, false)
 }
