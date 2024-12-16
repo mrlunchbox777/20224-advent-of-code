@@ -282,8 +282,8 @@ func (b *Block) rotate90(h *common.Helpers, init bool) (*Block, error) {
 	block := &Block{}
 	maxX := len(b.Rows[0])
 	block.Rows = make([]Set, maxX)
-	for x := 0; x < maxX; x++ {
-		for y := 0; y < maxY; y++ {
+	for y := 0; y < maxY; y++ {
+		for x := 0; x < maxX; x++ {
 			block.Rows[y] = append(block.Rows[y], b.Rows[y][maxX-x-1])
 		}
 	}
