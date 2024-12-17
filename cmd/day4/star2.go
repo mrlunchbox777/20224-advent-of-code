@@ -38,21 +38,6 @@ func Star2(h *common.Helpers) error {
 		Cell{Letter: "A"},
 		Cell{Letter: " "},
 	}
-	sm := Set{
-		Cell{Letter: "S"},
-		Cell{Letter: " "},
-		Cell{Letter: "M"},
-	}
-	mm := Set{
-		Cell{Letter: "M"},
-		Cell{Letter: " "},
-		Cell{Letter: "M"},
-	}
-	ss := Set{
-		Cell{Letter: "S"},
-		Cell{Letter: " "},
-		Cell{Letter: "S"},
-	}
 	// create the target sets
 	sets := []Sets{
 		{
@@ -60,23 +45,8 @@ func Star2(h *common.Helpers) error {
 			a,
 			ms,
 		},
-		{
-			sm,
-			a,
-			sm,
-		},
-		{
-			mm,
-			a,
-			ss,
-		},
-		{
-			ss,
-			a,
-			mm,
-		},
 	}
-	count, err := p.CountBlocksSameSize(h, sets)
+	count, err := p.CountBlocksSameSize(h, sets, true)
 	if err != nil {
 		h.Logger.Error(fmt.Sprintf("Error counting word: %s", err))
 		return err

@@ -40,9 +40,10 @@ var (
 // TestRotate90 is a test for the rotate90 function
 func TestRotate90(t *testing.T) {
 	testCases := []struct {
-		name     string
-		input    *Block
-		expected *Block
+		name      string
+		input     *Block
+		expected  *Block
+		diagsInit bool
 	}{
 		{
 			name: "rotate90_1x3",
@@ -50,8 +51,13 @@ func TestRotate90(t *testing.T) {
 				Rows: Sets{ms},
 			},
 			expected: &Block{
-				Rows: Sets{sm},
+				Rows: Sets{
+					{Cell{Letter: "M"}},
+					{Cell{Letter: " "}},
+					{Cell{Letter: "S"}},
+				},
 			},
+			diagsInit: false,
 		},
 		{
 			name: "rotate90_3x3",
@@ -59,6 +65,7 @@ func TestRotate90(t *testing.T) {
 				Rows: Sets{ms, a, ms}},
 			expected: &Block{
 				Rows: Sets{mm, a, ss}},
+			diagsInit: true,
 		},
 	}
 	for _, tc := range testCases {
@@ -90,13 +97,20 @@ func TestRotate90(t *testing.T) {
 			assert.Empty(t, tc.input.RCols)
 			assert.NotEqual(t, tc.input.RCols, result.RCols)
 			assert.Empty(t, tc.input.ADiag)
-			assert.NotEqual(t, tc.input.ADiag, result.ADiag)
 			assert.Empty(t, tc.input.RADiag)
-			assert.NotEqual(t, tc.input.RADiag, result.RADiag)
 			assert.Empty(t, tc.input.DDiag)
-			assert.NotEqual(t, tc.input.DDiag, result.DDiag)
 			assert.Empty(t, tc.input.RDDiag)
-			assert.NotEqual(t, tc.input.RDDiag, result.RDDiag)
+			if tc.diagsInit {
+				assert.NotEmpty(t, result.ADiag)
+				assert.NotEmpty(t, result.RADiag)
+				assert.NotEmpty(t, result.DDiag)
+				assert.NotEmpty(t, result.RDDiag)
+			} else {
+				assert.Empty(t, result.ADiag)
+				assert.Empty(t, result.RADiag)
+				assert.Empty(t, result.DDiag)
+				assert.Empty(t, result.RDDiag)
+			}
 		})
 	}
 }
@@ -104,31 +118,13 @@ func TestRotate90(t *testing.T) {
 // TestRotate90x is a test for the rotate90x function
 func TestRotate90x(t *testing.T) {
 	testBlock_1x3 := &Block{
-		Rows: Sets{
-			{
-				{Letter: "M"},
-				{Letter: " "},
-				{Letter: "S"},
-			},
-		},
+		Rows: Sets{ms},
 	}
 	testBlock_3x3 := &Block{
 		Rows: Sets{
-			{
-				{Letter: "M"},
-				{Letter: " "},
-				{Letter: "S"},
-			},
-			{
-				{Letter: " "},
-				{Letter: "A"},
-				{Letter: " "},
-			},
-			{
-				{Letter: "M"},
-				{Letter: " "},
-				{Letter: "S"},
-			},
+			ms,
+			a,
+			ms,
 		},
 	}
 	testCases := []struct {
@@ -143,15 +139,9 @@ func TestRotate90x(t *testing.T) {
 			times: 1,
 			expected: &Block{
 				Rows: Sets{
-					{
-						{Letter: "M"},
-					},
-					{
-						{Letter: " "},
-					},
-					{
-						{Letter: "S"},
-					},
+					{Cell{Letter: "M"}},
+					{Cell{Letter: " "}},
+					{Cell{Letter: "S"}},
 				},
 			},
 		},
@@ -160,13 +150,7 @@ func TestRotate90x(t *testing.T) {
 			input: testBlock_1x3,
 			times: 2,
 			expected: &Block{
-				Rows: Sets{
-					{
-						{Letter: "S"},
-						{Letter: " "},
-						{Letter: "M"},
-					},
-				},
+				Rows: Sets{sm},
 			},
 		},
 		{
@@ -175,15 +159,9 @@ func TestRotate90x(t *testing.T) {
 			times: 3,
 			expected: &Block{
 				Rows: Sets{
-					{
-						{Letter: "S"},
-					},
-					{
-						{Letter: " "},
-					},
-					{
-						{Letter: "M"},
-					},
+					{Cell{Letter: "S"}},
+					{Cell{Letter: " "}},
+					{Cell{Letter: "M"}},
 				},
 			},
 		},
@@ -193,21 +171,9 @@ func TestRotate90x(t *testing.T) {
 			times: 1,
 			expected: &Block{
 				Rows: Sets{
-					{
-						{Letter: "M"},
-						{Letter: " "},
-						{Letter: "M"},
-					},
-					{
-						{Letter: " "},
-						{Letter: "A"},
-						{Letter: " "},
-					},
-					{
-						{Letter: "S"},
-						{Letter: " "},
-						{Letter: "S"},
-					},
+					mm,
+					a,
+					ss,
 				},
 			},
 		},
@@ -217,21 +183,9 @@ func TestRotate90x(t *testing.T) {
 			times: 2,
 			expected: &Block{
 				Rows: Sets{
-					{
-						{Letter: "S"},
-						{Letter: " "},
-						{Letter: "M"},
-					},
-					{
-						{Letter: " "},
-						{Letter: "A"},
-						{Letter: " "},
-					},
-					{
-						{Letter: "M"},
-						{Letter: " "},
-						{Letter: "S"},
-					},
+					sm,
+					a,
+					sm,
 				},
 			},
 		},
@@ -241,21 +195,9 @@ func TestRotate90x(t *testing.T) {
 			times: 3,
 			expected: &Block{
 				Rows: Sets{
-					{
-						{Letter: "S"},
-						{Letter: " "},
-						{Letter: "S"},
-					},
-					{
-						{Letter: " "},
-						{Letter: "A"},
-						{Letter: " "},
-					},
-					{
-						{Letter: "M"},
-						{Letter: " "},
-						{Letter: "M"},
-					},
+					ss,
+					a,
+					mm,
 				},
 			},
 		},

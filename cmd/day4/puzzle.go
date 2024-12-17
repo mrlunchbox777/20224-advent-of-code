@@ -407,7 +407,7 @@ func (b *Block) countBlockInBlockSameSize(h *common.Helpers, targets []Sets, rot
 }
 
 // CountBlocks returns the number of times a Block appears in the puzzle
-func (p *Puzzle) CountBlocksSameSize(h *common.Helpers, targets []Sets) (int, error) {
+func (p *Puzzle) CountBlocksSameSize(h *common.Helpers, targets []Sets, rotate bool) (int, error) {
 	if len(targets) == 0 {
 		h.Logger.Error("No targets to count")
 		return 0, fmt.Errorf("No targets to count")
@@ -424,5 +424,5 @@ func (p *Puzzle) CountBlocksSameSize(h *common.Helpers, targets []Sets) (int, er
 			return 0, fmt.Errorf("Targets are not the same size")
 		}
 	}
-	return p.countBlockInBlockSameSize(h, targets, false)
+	return p.countBlockInBlockSameSize(h, targets, true)
 }
