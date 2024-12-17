@@ -259,25 +259,25 @@ func (b *Block) countWordInBlock(h *common.Helpers, word string) (int, error) {
 	return count, nil
 }
 
-// getBlocksFromBlock returns the subblocks from a block
-func (b *Block) getBlocksFromBlock(h *common.Helpers, target *Block) ([]*Block, error) {
+// getBlocksFromBlock returns the subblocks from a block based on a target size
+func (b *Block) getBlocksFromBlock(h *common.Helpers, target *Size) ([]*Block, error) {
 	h.Logger.Debug("Getting blocks from block")
-	h.Logger.Debug(fmt.Sprintf("Target: %d x %d", target.Size.X, target.Size.Y))
+	h.Logger.Debug(fmt.Sprintf("Target: %d x %d", target.X, target.Y))
 	h.Logger.Debug(fmt.Sprintf("Block: %d x %d", b.Size.X, b.Size.Y))
 	blocks := make([]*Block, 0)
 	// get dimensions of target
 	// get the first row of target sized blocks from the source
-	for y := 0; y < b.Size.Y-target.Size.Y; y++ {
-		for x := 0; x < b.Size.X-target.Size.X; x++ {
+	for y := 0; y < b.Size.Y-target.Y; y++ {
+		for x := 0; x < b.Size.X-target.X; x++ {
 			block := &Block{}
 			// get the subset of rows
-			for i := 0; i < target.Size.Y; i++ {
+			for i := 0; i < target.Y; i++ {
 				row := make(Set, 0)
 				// only get the subset of columns
-				row = append(row, b.Rows[y+i][x:x+target.Size.X]...)
+				row = append(row, b.Rows[y+i][x:x+target.X]...)
 				block.Rows = append(block.Rows, row)
 			}
-			h.Logger.Debug(fmt.Sprintf("Block: %d x %d", target.Size.X, target.Size.Y))
+			h.Logger.Debug(fmt.Sprintf("Block: %d x %d", target.X, target.Y))
 			err := block.initialize(h, block.Rows)
 			if err != nil {
 				h.Logger.Error(fmt.Sprintf("Error initializing block: %s", err))
@@ -429,7 +429,6 @@ func (b *Block) countBlockInBlockSameSize(h *common.Helpers, targets []Sets, rot
 		}
 	}
 
-	targetBlock := targetBlocks[0]
 	targetSizes := make([]*Size, 0)
 	for _, targetBlock := range targetBlocks {
 		alreadyExists := false
@@ -447,7 +446,7 @@ func (b *Block) countBlockInBlockSameSize(h *common.Helpers, targets []Sets, rot
 	subBlocks := make(map[*Size][]*Block, 0)
 	for _, targetSize := range targetSizes {
 		h.Logger.Debug(fmt.Sprintf("Target size: %d x %d", targetSize.X, targetSize.Y))
-		subBlock, err := b.getBlocksFromBlock(h, targetBlock)
+		subBlock, err := b.getBlocksFromBlock(h, targetSize)
 		if err != nil {
 			h.Logger.Error(fmt.Sprintf("Error getting blocks from block: %s", err))
 			return 0, err

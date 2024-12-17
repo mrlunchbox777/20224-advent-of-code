@@ -117,7 +117,7 @@ func TestRotate90(t *testing.T) {
 
 // TestRotate90x is a test for the rotate90x function
 func TestRotate90x(t *testing.T) {
-	testBlock_1x3 := &Block{
+	testBlock_3x1 := &Block{
 		Rows: Sets{ms},
 	}
 	testBlock_3x3 := &Block{
@@ -134,8 +134,8 @@ func TestRotate90x(t *testing.T) {
 		expected *Block
 	}{
 		{
-			name:  "rotate90x_1x3_once",
-			input: testBlock_1x3,
+			name:  "rotate90x_3x1_once",
+			input: testBlock_3x1,
 			times: 1,
 			expected: &Block{
 				Rows: Sets{
@@ -146,16 +146,16 @@ func TestRotate90x(t *testing.T) {
 			},
 		},
 		{
-			name:  "rotate90x_1x3_twice",
-			input: testBlock_1x3,
+			name:  "rotate90x_3x1_twice",
+			input: testBlock_3x1,
 			times: 2,
 			expected: &Block{
 				Rows: Sets{sm},
 			},
 		},
 		{
-			name:  "rotate90x_1x3_three_times",
-			input: testBlock_1x3,
+			name:  "rotate90x_3x1_three_times",
+			input: testBlock_3x1,
 			times: 3,
 			expected: &Block{
 				Rows: Sets{
