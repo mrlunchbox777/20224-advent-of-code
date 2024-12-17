@@ -1,7 +1,6 @@
 package day4
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/mrlunchbox777/2024-advent-of-code/common"
@@ -55,8 +54,17 @@ func (s *Size) Equals(o *Size) bool {
 	return s.X == o.X && s.Y == o.Y
 }
 
+// SetGroup is a slice of sets
+type SetGroup []Sets
+
+// BlockGroup is a slice of blocks
+type BlockGroup []*Block
+
+// SizeGroup is a slice of sizes
+type SizeGroup []*Size
+
 // SubBlocks is a slice of blocks by size
-type SubBlocks map[*Size][]*Block
+type SubBlocks map[*Size]BlockGroup
 
 // WrongSizeType is an int that represents the type of wrong size error
 type WrongSizeType string
@@ -260,12 +268,11 @@ func (b *Block) countWordInBlock(h *common.Helpers, word string) (int, error) {
 }
 
 // getBlocksFromBlock returns the subblocks from a block based on a target size
-func (b *Block) getBlocksFromBlock(h *common.Helpers, target *Size) ([]*Block, error) {
+func (b *Block) getBlocksFromBlock(h *common.Helpers, target *Size) (BlockGroup, error) {
 	h.Logger.Debug("Getting blocks from block")
 	h.Logger.Debug(fmt.Sprintf("Target: %d x %d", target.X, target.Y))
 	h.Logger.Debug(fmt.Sprintf("Block: %d x %d", b.Size.X, b.Size.Y))
 	blocks := make([]*Block, 0)
-	// get dimensions of target
 	// get the first row of target sized blocks from the source
 	for y := 0; y < b.Size.Y-target.Y; y++ {
 		for x := 0; x < b.Size.X-target.X; x++ {
@@ -368,7 +375,7 @@ func (b *Block) rotate90x(h *common.Helpers, count int) (*Block, error) {
 }
 
 // doBlocksMatchAny checks if two blocks match in any orientation (rotated and checked 3 times), use " " for wildcards
-func (b *Block) doBlocksMatchAny(h *common.Helpers, targets []*Block) (int, error) {
+func (b *Block) doBlocksMatchAny(h *common.Helpers, targets BlockGroup) (int, error) {
 	h.Logger.Debug("Checking if blocks match")
 	count := 0
 	for _, target := range targets {
@@ -384,76 +391,75 @@ func (b *Block) doBlocksMatchAny(h *common.Helpers, targets []*Block) (int, erro
 	return count, nil
 }
 
-// countBlockInBlock returns the number of times a Block appears in a block (use " " for wildcards)
-func (b *Block) countBlockInBlockSameSize(h *common.Helpers, targets []Sets, rotate bool) (int, error) {
-	h.Logger.Debug("Counting block in block")
-	if !b.Initialized {
-		err := b.initialize(h, b.Rows)
-		if err != nil {
-			h.Logger.Error(fmt.Sprintf("Error initializing block: %s", err))
-			return 0, err
-		}
-	}
-	targetBlocks := make([]*Block, 0)
-	for _, target := range targets {
-		targetBlock, err := getBlock(h, target)
+// getBlocks returns blocks for a slice of Sets
+func (s SetGroup) getBlocks(h *common.Helpers) (BlockGroup, error) {
+	h.Logger.Debug("Getting blocks")
+	blocks := make(BlockGroup, 0)
+	for _, set := range s {
+		block, err := getBlock(h, set)
 		if err != nil {
 			h.Logger.Error(fmt.Sprintf("Error getting block: %s", err))
-			return 0, err
+			return nil, err
 		}
-		targetBlocks = append(targetBlocks, targetBlock)
+		blocks = append(blocks, block)
 	}
-	if rotate {
-		for _, target := range targets {
-			targetBlock, err := getBlock(h, target)
-			if err != nil {
-				h.Logger.Error(fmt.Sprintf("Error getting block: %s", err))
-				return 0, err
-			}
-			// already have the original block
-			for i := 1; i < 4; i++ {
-				newTarget, err := targetBlock.rotate90x(h, i)
-				if err != nil {
-					h.Logger.Error(fmt.Sprintf("Error rotating block: %s", err))
-					return 0, err
-				}
-				h.Logger.Debug(fmt.Sprintf("Rotated block: %d x %d", newTarget.Size.X, newTarget.Size.Y))
-				stringNewTarget, err := json.Marshal(newTarget)
-				if err != nil {
-					h.Logger.Error(fmt.Sprintf("Error marshalling block: %s", err))
-					return 0, err
-				}
-				h.Logger.Debug(fmt.Sprintf("Rotated block values: %s", stringNewTarget))
-				targetBlocks = append(targetBlocks, newTarget)
-			}
-		}
-	}
+	return blocks, nil
+}
 
-	targetSizes := make([]*Size, 0)
-	for _, targetBlock := range targetBlocks {
+// rotateBlocks gets all 4 rotations of a slice of blocks
+func (b BlockGroup) rotateBlocks(h *common.Helpers) (BlockGroup, error) {
+	h.Logger.Debug("Rotating blocks")
+	rotatedBlocks := make(BlockGroup, 0)
+	for _, block := range b {
+		for i := 0; i < 4; i++ {
+			newBlock, err := block.rotate90x(h, i)
+			if err != nil {
+				h.Logger.Error(fmt.Sprintf("Error rotating block: %s", err))
+				return nil, err
+			}
+			rotatedBlocks = append(rotatedBlocks, newBlock)
+		}
+	}
+	return rotatedBlocks, nil
+}
+
+// getSizesFromBlocks returns the sizes of a slice of blocks
+func (b BlockGroup) getSizesFromBlocks() []*Size {
+	sizes := make([]*Size, 0)
+	for _, block := range b {
 		alreadyExists := false
-		for _, size := range targetSizes {
-			if size.Equals(targetBlock.Size) {
+		for _, size := range sizes {
+			if size.Equals(block.Size) {
 				alreadyExists = true
 				break
 			}
 		}
 		if !alreadyExists {
-			targetSizes = append(targetSizes, targetBlock.Size)
+			sizes = append(sizes, block.Size)
 		}
 	}
+	return sizes
+}
 
+// getSubBlocksFromSizes returns the subblocks from a slice of sizes
+func (b *Block) getSubBlocksFromSizes(h *common.Helpers, sizes SizeGroup) (SubBlocks, error) {
+	h.Logger.Debug("Getting subblocks from sizes")
 	subBlocks := make(SubBlocks, 0)
-	for _, targetSize := range targetSizes {
-		h.Logger.Debug(fmt.Sprintf("Target size: %d x %d", targetSize.X, targetSize.Y))
-		subBlock, err := b.getBlocksFromBlock(h, targetSize)
+	for _, size := range sizes {
+		h.Logger.Debug(fmt.Sprintf("Target size: %d x %d", size.X, size.Y))
+		subBlock, err := b.getBlocksFromBlock(h, size)
 		if err != nil {
 			h.Logger.Error(fmt.Sprintf("Error getting blocks from block: %s", err))
-			return 0, err
+			return nil, err
 		}
-		subBlocks[targetSize] = subBlock
+		subBlocks[size] = subBlock
 	}
+	return subBlocks, nil
+}
 
+// countBlockInBlockPerSubBlock returns the number of times a Block appears in a block (use " " for wildcards)
+func (b *Block) countBlockInBlockPerSubBlock(h *common.Helpers, subBlocks SubBlocks, targetBlocks BlockGroup) (int, error) {
+	h.Logger.Debug("Counting block in block per subblock")
 	count := 0
 	for _, subBlock := range subBlocks {
 		for _, block := range subBlock {
@@ -468,8 +474,44 @@ func (b *Block) countBlockInBlockSameSize(h *common.Helpers, targets []Sets, rot
 	return count, nil
 }
 
+// countBlockInBlock returns the number of times a Block appears in a block (use " " for wildcards)
+func (b *Block) countBlockInBlock(h *common.Helpers, targets SetGroup, rotate bool) (int, error) {
+	h.Logger.Debug("Counting block in block")
+	if !b.Initialized {
+		err := b.initialize(h, b.Rows)
+		if err != nil {
+			h.Logger.Error(fmt.Sprintf("Error initializing block: %s", err))
+			return 0, err
+		}
+	}
+
+	targetBlocks, err := targets.getBlocks(h)
+	if err != nil {
+		h.Logger.Error(fmt.Sprintf("Error getting blocks: %s", err))
+		return 0, err
+	}
+
+	if rotate {
+		targetBlocks, err = targetBlocks.rotateBlocks(h)
+		if err != nil {
+			h.Logger.Error(fmt.Sprintf("Error rotating blocks: %s", err))
+			return 0, err
+		}
+	}
+
+	targetSizes := targetBlocks.getSizesFromBlocks()
+
+	subBlocks, err := b.getSubBlocksFromSizes(h, targetSizes)
+	if err != nil {
+		h.Logger.Error(fmt.Sprintf("Error getting subblocks from sizes: %s", err))
+		return 0, err
+	}
+
+	return b.countBlockInBlockPerSubBlock(h, subBlocks, targetBlocks)
+}
+
 // CountBlocks returns the number of times a Block appears in the puzzle
-func (p *Puzzle) CountBlocksSameSize(h *common.Helpers, targets []Sets, rotate bool) (int, error) {
+func (p *Puzzle) CountBlocks(h *common.Helpers, targets []Sets, rotate bool) (int, error) {
 	if len(targets) == 0 {
 		h.Logger.Error("No targets to count")
 		return 0, fmt.Errorf("No targets to count")
@@ -485,5 +527,5 @@ func (p *Puzzle) CountBlocksSameSize(h *common.Helpers, targets []Sets, rotate b
 			return 0, fmt.Errorf("No target size X")
 		}
 	}
-	return p.countBlockInBlockSameSize(h, targets, true)
+	return p.countBlockInBlock(h, targets, true)
 }

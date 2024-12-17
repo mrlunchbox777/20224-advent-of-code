@@ -46,7 +46,7 @@ func Star2(h *common.Helpers) error {
 			ms,
 		},
 	}
-	count, err := p.CountBlocksSameSize(h, sets, true)
+	count, err := p.CountBlocks(h, sets, true)
 	if err != nil {
 		h.Logger.Error(fmt.Sprintf("Error counting word: %s", err))
 		return err
