@@ -262,8 +262,8 @@ func (b *Block) countWordInBlock(h *common.Helpers, word string) (int, error) {
 // getBlocksFromBlock returns the subblocks from a block
 func (b *Block) getBlocksFromBlock(h *common.Helpers, target *Block) ([]*Block, error) {
 	h.Logger.Debug("Getting blocks from block")
-	h.Logger.Debug(fmt.Sprintf("Target: %d x %d", target.Size.Y, target.Size.X))
-	h.Logger.Debug(fmt.Sprintf("Block: %d x %d", b.Size.Y, b.Size.X))
+	h.Logger.Debug(fmt.Sprintf("Target: %d x %d", target.Size.X, target.Size.Y))
+	h.Logger.Debug(fmt.Sprintf("Block: %d x %d", b.Size.X, b.Size.Y))
 	blocks := make([]*Block, 0)
 	// get dimensions of target
 	// get the first row of target sized blocks from the source
@@ -277,7 +277,7 @@ func (b *Block) getBlocksFromBlock(h *common.Helpers, target *Block) ([]*Block, 
 				row = append(row, b.Rows[y+i][x:x+target.Size.X]...)
 				block.Rows = append(block.Rows, row)
 			}
-			h.Logger.Debug(fmt.Sprintf("Block: %d x %d", target.Size.Y, target.Size.X))
+			h.Logger.Debug(fmt.Sprintf("Block: %d x %d", target.Size.X, target.Size.Y))
 			err := block.initialize(h, block.Rows)
 			if err != nil {
 				h.Logger.Error(fmt.Sprintf("Error initializing block: %s", err))
@@ -417,7 +417,7 @@ func (b *Block) countBlockInBlockSameSize(h *common.Helpers, targets []Sets, rot
 					h.Logger.Error(fmt.Sprintf("Error rotating block: %s", err))
 					return 0, err
 				}
-				h.Logger.Debug(fmt.Sprintf("Rotated block: %d x %d", newTarget.Size.Y, newTarget.Size.X))
+				h.Logger.Debug(fmt.Sprintf("Rotated block: %d x %d", newTarget.Size.X, newTarget.Size.Y))
 				stringNewTarget, err := json.Marshal(newTarget)
 				if err != nil {
 					h.Logger.Error(fmt.Sprintf("Error marshalling block: %s", err))
