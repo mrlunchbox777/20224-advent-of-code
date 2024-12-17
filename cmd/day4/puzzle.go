@@ -7,6 +7,13 @@ import (
 	"github.com/mrlunchbox777/2024-advent-of-code/common"
 )
 
+const (
+	// Column is the column size type
+	Column = WrongSizeType("Column")
+	// Row is the row size type
+	Row = WrongSizeType("Row")
+)
+
 // Puzzle is the struct for a word search puzzle
 type Puzzle struct {
 	Raw string
@@ -23,6 +30,7 @@ type Block struct {
 	RDDiag      Sets
 	ADiag       Sets
 	RADiag      Sets
+	Size        *Size
 }
 
 // Sets is a slice of sets
@@ -34,6 +42,35 @@ type Set []Cell
 // Cell is the struct for a cell in a word search puzzle
 type Cell struct {
 	Letter string
+}
+
+// Size is the struct for the size of a block
+type Size struct {
+	X int
+	Y int
+}
+
+// Equals checks if two sizes are equal
+func (s *Size) Equals(o *Size) bool {
+	return s.X == o.X && s.Y == o.Y
+}
+
+// SubBlocks is a slice of blocks by size
+type SubBlocks map[*Size][]*Block
+
+// WrongSizeType is an int that represents the type of wrong size error
+type WrongSizeType string
+
+// WrongSizeError is an error for when the sizes don't match
+type WrongSizeError struct {
+	Expected int
+	Actual   int
+	Type     WrongSizeType
+}
+
+// Error returns the error message
+func (e *WrongSizeError) Error() string {
+	return fmt.Sprintf("Wrong %s size. Expected %d, got %d", e.Type, e.Expected, e.Actual)
 }
 
 // GetPuzzle returns a new puzzle struct
@@ -85,7 +122,7 @@ func (p *Puzzle) getRows(h *common.Helpers) {
 // getCols parses the columns
 func (p *Block) getCols(h *common.Helpers) {
 	h.Logger.Debug("Getting columns")
-	p.Cols = make([]Set, len(p.Rows[0]))
+	p.Cols = make([]Set, p.Size.X)
 	for _, r := range p.Rows {
 		for i, c := range r {
 			p.Cols[i] = append(p.Cols[i], c)
@@ -96,14 +133,14 @@ func (p *Block) getCols(h *common.Helpers) {
 
 // getADiag parses the ascending diagonals, starting from the top left
 func (p *Block) getADiag(h *common.Helpers) {
-	if len(p.Rows) != len(p.Rows[0]) {
+	if p.Size.Y != p.Size.X {
 		h.Logger.Debug("Can't get ascending diagonals")
 		return
 	}
 	h.Logger.Debug("Getting ascending diagonals")
-	p.ADiag = make([]Set, len(p.Rows)*2-1)
-	for y := 0; y < len(p.Rows); y++ {
-		for x := 0; x < len(p.Rows[y]); x++ {
+	p.ADiag = make([]Set, p.Size.Y*2-1)
+	for y := 0; y < p.Size.Y; y++ {
+		for x := 0; x < p.Size.X; x++ {
 			p.ADiag[y+x] = append(p.ADiag[y+x], p.Rows[y][x])
 		}
 	}
@@ -112,15 +149,15 @@ func (p *Block) getADiag(h *common.Helpers) {
 
 // getDDiag parses the descending diagonals, starting from the top right
 func (p *Block) getDDiag(h *common.Helpers) {
-	if len(p.Rows) != len(p.Rows[0]) {
+	if p.Size.Y != p.Size.X {
 		h.Logger.Debug("Can't get descending diagonals")
 		return
 	}
 	h.Logger.Debug("Getting descending diagonals")
-	p.DDiag = make([]Set, len(p.Rows)*2-1)
-	for y := 0; y < len(p.Rows); y++ {
-		xLen := len(p.Rows[y]) - 1
-		for x := 0; x < len(p.Rows[y]); x++ {
+	p.DDiag = make([]Set, p.Size.Y*2-1)
+	for y := 0; y < p.Size.Y; y++ {
+		xLen := p.Size.X - 1
+		for x := 0; x < p.Size.X; x++ {
 			p.DDiag[y+x] = append(p.DDiag[y+x], p.Rows[y][xLen-x])
 		}
 	}
@@ -153,6 +190,10 @@ func (b *Block) initialize(h *common.Helpers, rows Sets) error {
 	}
 	h.Logger.Debug(fmt.Sprintf("Initializing block: %d x %d", len(rows), len(rows[0])))
 	b.Rows = rows
+	b.Size = &Size{
+		X: len(b.Rows[0]),
+		Y: len(b.Rows),
+	}
 	b.RRows = b.getRSets(h, b.Rows)
 	b.getCols(h)
 	b.getADiag(h)
@@ -221,24 +262,22 @@ func (b *Block) countWordInBlock(h *common.Helpers, word string) (int, error) {
 // getBlocksFromBlock returns the subblocks from a block
 func (b *Block) getBlocksFromBlock(h *common.Helpers, target *Block) ([]*Block, error) {
 	h.Logger.Debug("Getting blocks from block")
-	h.Logger.Debug(fmt.Sprintf("Target: %d x %d", len(target.Rows), len(target.Rows[0])))
-	h.Logger.Debug(fmt.Sprintf("Block: %d x %d", len(b.Rows), len(b.Rows[0])))
+	h.Logger.Debug(fmt.Sprintf("Target: %d x %d", target.Size.Y, target.Size.X))
+	h.Logger.Debug(fmt.Sprintf("Block: %d x %d", b.Size.Y, b.Size.X))
 	blocks := make([]*Block, 0)
 	// get dimensions of target
-	rows := len(target.Rows)
-	cols := len(target.Rows[0])
 	// get the first row of target sized blocks from the source
-	for y := 0; y < len(b.Rows)-rows; y++ {
-		for x := 0; x < len(b.Rows[y])-cols; x++ {
+	for y := 0; y < b.Size.Y-target.Size.Y; y++ {
+		for x := 0; x < b.Size.X-target.Size.X; x++ {
 			block := &Block{}
 			// get the subset of rows
-			for i := 0; i < rows; i++ {
+			for i := 0; i < target.Size.Y; i++ {
 				row := make(Set, 0)
 				// only get the subset of columns
-				row = append(row, b.Rows[y+i][x:x+cols]...)
+				row = append(row, b.Rows[y+i][x:x+target.Size.X]...)
 				block.Rows = append(block.Rows, row)
 			}
-			h.Logger.Debug(fmt.Sprintf("Block: %d x %d", len(block.Rows), len(block.Rows[0])))
+			h.Logger.Debug(fmt.Sprintf("Block: %d x %d", target.Size.Y, target.Size.X))
 			err := block.initialize(h, block.Rows)
 			if err != nil {
 				h.Logger.Error(fmt.Sprintf("Error initializing block: %s", err))
@@ -253,20 +292,23 @@ func (b *Block) getBlocksFromBlock(h *common.Helpers, target *Block) ([]*Block, 
 // doBlocksMatch checks if two blocks match, use " " for wildcards
 func (b *Block) doBlocksMatch(h *common.Helpers, target *Block) (bool, error) {
 	h.Logger.Debug("Checking if blocks match")
-	rCount := len(b.Rows)
-	cCount := 0
-	if rCount != len(target.Rows) {
-		return false, fmt.Errorf("Rows don't match: %d != %d", len(b.Rows), len(target.Rows))
+	if b.Size.Y != target.Size.Y {
+		return false, &WrongSizeError{
+			Expected: b.Size.Y,
+			Actual:   target.Size.Y,
+			Type:     Row,
+		}
 	}
-	if rCount > 0 {
-		cCount = len(b.Rows[0])
-		if cCount != len(target.Rows[0]) {
-			return false, fmt.Errorf("Cols don't match: %d != %d", len(b.Rows[0]), len(target.Rows[0]))
+	if b.Size.X != target.Size.X {
+		return false, &WrongSizeError{
+			Expected: b.Size.X,
+			Actual:   target.Size.X,
+			Type:     Column,
 		}
 	}
 	// every cell must match
-	for y := 0; y < rCount; y++ {
-		for x := 0; x < cCount; x++ {
+	for y := 0; y < b.Size.Y; y++ {
+		for x := 0; x < b.Size.X; x++ {
 			// skip wildcards
 			if target.Rows[y][x].Letter == " " {
 				continue
@@ -282,18 +324,16 @@ func (b *Block) doBlocksMatch(h *common.Helpers, target *Block) (bool, error) {
 // rotate90 rotates the block 90 degrees
 func (b *Block) rotate90(h *common.Helpers, init bool) (*Block, error) {
 	h.Logger.Debug("Rotating block")
-	maxY := len(b.Rows)
-	if maxY == 0 {
+	if b.Size.Y == 0 {
 		h.Logger.Error("No rows to rotate")
 		return nil, fmt.Errorf("No rows to rotate")
 	}
-	maxX := len(b.Rows[0])
 	block := &Block{}
-	block.Rows = make(Sets, maxX)
-	for x := 0; x < maxX; x++ {
-		block.Rows[x] = make(Set, maxY)
-		for y := 0; y < maxY; y++ {
-			block.Rows[x][y] = b.Rows[maxY-y-1][x]
+	block.Rows = make(Sets, b.Size.X)
+	for x := 0; x < b.Size.X; x++ {
+		block.Rows[x] = make(Set, b.Size.Y)
+		for y := 0; y < b.Size.Y; y++ {
+			block.Rows[x][y] = b.Rows[b.Size.Y-y-1][x]
 		}
 	}
 	if init {
@@ -301,6 +341,11 @@ func (b *Block) rotate90(h *common.Helpers, init bool) (*Block, error) {
 		if err != nil {
 			h.Logger.Error(fmt.Sprintf("Error initializing block: %s", err))
 			return nil, err
+		}
+	} else {
+		block.Size = &Size{
+			X: b.Size.Y,
+			Y: b.Size.X,
 		}
 	}
 	return block, nil
@@ -372,7 +417,7 @@ func (b *Block) countBlockInBlockSameSize(h *common.Helpers, targets []Sets, rot
 					h.Logger.Error(fmt.Sprintf("Error rotating block: %s", err))
 					return 0, err
 				}
-				h.Logger.Debug(fmt.Sprintf("Rotated block: %d x %d", len(newTarget.Rows), len(newTarget.Rows[0])))
+				h.Logger.Debug(fmt.Sprintf("Rotated block: %d x %d", newTarget.Size.Y, newTarget.Size.X))
 				stringNewTarget, err := json.Marshal(newTarget)
 				if err != nil {
 					h.Logger.Error(fmt.Sprintf("Error marshalling block: %s", err))
@@ -384,24 +429,42 @@ func (b *Block) countBlockInBlockSameSize(h *common.Helpers, targets []Sets, rot
 		}
 	}
 
-	// os.Exit(0)
-
-	// NOTE: from here on, only for same sized blocks
 	targetBlock := targetBlocks[0]
-
-	count := 0
-	subBlocks, err := b.getBlocksFromBlock(h, targetBlock)
-	if err != nil {
-		h.Logger.Error(fmt.Sprintf("Error getting blocks from block: %s", err))
-		return 0, err
+	targetSizes := make([]*Size, 0)
+	for _, targetBlock := range targetBlocks {
+		alreadyExists := false
+		for _, size := range targetSizes {
+			if size.Equals(targetBlock.Size) {
+				alreadyExists = true
+				break
+			}
+		}
+		if !alreadyExists {
+			targetSizes = append(targetSizes, targetBlock.Size)
+		}
 	}
-	for _, subBlock := range subBlocks {
-		match, err := subBlock.doBlocksMatchAny(h, targetBlocks)
+
+	subBlocks := make(map[*Size][]*Block, 0)
+	for _, targetSize := range targetSizes {
+		h.Logger.Debug(fmt.Sprintf("Target size: %d x %d", targetSize.X, targetSize.Y))
+		subBlock, err := b.getBlocksFromBlock(h, targetBlock)
 		if err != nil {
-			h.Logger.Error(fmt.Sprintf("Error checking if blocks match: %s", err))
+			h.Logger.Error(fmt.Sprintf("Error getting blocks from block: %s", err))
 			return 0, err
 		}
-		count += match
+		subBlocks[targetSize] = subBlock
+	}
+
+	count := 0
+	for _, subBlock := range subBlocks {
+		for _, block := range subBlock {
+			match, err := block.doBlocksMatchAny(h, targetBlocks)
+			if err != nil {
+				h.Logger.Error(fmt.Sprintf("Error checking if blocks match: %s", err))
+				return 0, err
+			}
+			count += match
+		}
 	}
 	return count, nil
 }
@@ -412,16 +475,15 @@ func (p *Puzzle) CountBlocksSameSize(h *common.Helpers, targets []Sets, rotate b
 		h.Logger.Error("No targets to count")
 		return 0, fmt.Errorf("No targets to count")
 	}
-	size := len(targets[0])
-	if size == 0 {
-		h.Logger.Error("No target size")
-		return 0, fmt.Errorf("No target size")
-	}
 	for _, target := range targets {
 		h.Logger.Debug(fmt.Sprintf("Target: %d x %d", len(target), len(target[0])))
-		if len(target) != size {
-			h.Logger.Error("Targets are not the same size")
-			return 0, fmt.Errorf("Targets are not the same size")
+		if len(targets[0]) == 0 {
+			h.Logger.Error("No target size Y")
+			return 0, fmt.Errorf("No target size Y")
+		}
+		if len(targets[0][0]) == 0 {
+			h.Logger.Error("No target size X")
+			return 0, fmt.Errorf("No target size X")
 		}
 	}
 	return p.countBlockInBlockSameSize(h, targets, true)
