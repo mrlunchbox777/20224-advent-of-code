@@ -443,7 +443,7 @@ func (b *Block) countBlockInBlockSameSize(h *common.Helpers, targets []Sets, rot
 		}
 	}
 
-	subBlocks := make(map[*Size][]*Block, 0)
+	subBlocks := make(SubBlocks, 0)
 	for _, targetSize := range targetSizes {
 		h.Logger.Debug(fmt.Sprintf("Target size: %d x %d", targetSize.X, targetSize.Y))
 		subBlock, err := b.getBlocksFromBlock(h, targetSize)
