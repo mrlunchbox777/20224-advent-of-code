@@ -14,6 +14,18 @@ const (
 	star2 = "star2"
 )
 
+var (
+	c_a     = Cell{Letter: "A"}
+	c_m     = Cell{Letter: "M"}
+	c_s     = Cell{Letter: "S"}
+	c_space = Cell{Letter: " "}
+	a       = Set{c_space, c_a, c_space}
+	ms      = Set{c_m, c_space, c_s}
+	sm      = Set{c_s, c_space, c_m}
+	mm      = Set{c_m, c_space, c_m}
+	ss      = Set{c_s, c_space, c_s}
+)
+
 // NewCmd creates a new day1 command
 func NewCmd(h *common.Helpers) *cobra.Command {
 	day1Cmd := &cobra.Command{

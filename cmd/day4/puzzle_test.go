@@ -10,31 +10,16 @@ import (
 )
 
 var (
-	ms = Set{
-		Cell{Letter: "M"},
-		Cell{Letter: " "},
-		Cell{Letter: "S"},
-	}
-	a = Set{
-		Cell{Letter: " "},
-		Cell{Letter: "A"},
-		Cell{Letter: " "},
-	}
-	sm = Set{
-		Cell{Letter: "S"},
-		Cell{Letter: " "},
-		Cell{Letter: "M"},
-	}
-	mm = Set{
-		Cell{Letter: "M"},
-		Cell{Letter: " "},
-		Cell{Letter: "M"},
-	}
-	ss = Set{
-		Cell{Letter: "S"},
-		Cell{Letter: " "},
-		Cell{Letter: "S"},
-	}
+	s_a       = Set{Cell{Letter: "A"}}
+	s_m       = Set{Cell{Letter: "M"}}
+	s_s       = Set{Cell{Letter: "S"}}
+	s_space   = Set{Cell{Letter: " "}}
+	s2_aspace = Set{Cell{Letter: "A"}, Cell{Letter: " "}}
+	s2_spacea = Set{Cell{Letter: " "}, Cell{Letter: "A"}}
+	s2_mspace = Set{Cell{Letter: "M"}, Cell{Letter: " "}}
+	s2_spacem = Set{Cell{Letter: " "}, Cell{Letter: "M"}}
+	s2_sspace = Set{Cell{Letter: "S"}, Cell{Letter: " "}}
+	s2_spaces = Set{Cell{Letter: " "}, Cell{Letter: "S"}}
 )
 
 // TestRotate90 is a test for the rotate90 function
@@ -222,3 +207,38 @@ func TestRotate90x(t *testing.T) {
 		})
 	}
 }
+
+// TestGetSubBlockFromSizes is a test for the getSubBlockFromSizes function
+// func TestGetSubBlockFromSizes(t *testing.T) {
+// 	testBlock_3x3 := &Block{
+// 		Rows: Sets{
+// 			ms,
+// 			a,
+// 			ms,
+// 		},
+// 	}
+// 	testCases := []struct {
+// 		name     string
+// 		input    SizeGroup
+// 		expected BlockGroup
+// 	}{
+// 		{
+// 			name: "getSubBlockFromSizes_1x1",
+// 			input: SizeGroup{
+// 				Rows: 1,
+// 				Cols: 1,
+// 			},
+// 			expected: BlockGroup{
+// 				s_m, s_space, s_s,
+// 				s_space, s_a, s_space,
+// 				s_m, s_space, s_s,
+// 			},
+// 		},
+// 		{
+// 			name: "getSubBlockFromSizes_2x2",
+// 			input: SizeGroup{
+// 				Rows: 2,
+// 				Cols: 2,
+// 			},
+// 			expected: BlockGroup{
+// 				{}

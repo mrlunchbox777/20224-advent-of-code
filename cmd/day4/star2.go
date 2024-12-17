@@ -27,17 +27,6 @@ func Star2(h *common.Helpers) error {
 		h.Logger.Error(fmt.Sprintf("Error getting inputs: %s", err))
 		return err
 	}
-	// create sub sets
-	ms := Set{
-		Cell{Letter: "M"},
-		Cell{Letter: " "},
-		Cell{Letter: "S"},
-	}
-	a := Set{
-		Cell{Letter: " "},
-		Cell{Letter: "A"},
-		Cell{Letter: " "},
-	}
 	// create the target sets
 	sets := []Sets{
 		{
